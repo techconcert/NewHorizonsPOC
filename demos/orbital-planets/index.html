@@ -1,0 +1,1668 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>New Horizon Landing Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap">
+<style>
+/* Layout: full-bleed WebGL scene. HUD grid: brand + generator bar on top, render stats left, zone index / specification panel right. Hotspot tags float over the canvas. Single committed dark look. */
+:root{
+  --bg:#02070b;
+  --panel:rgba(3,18,25,.74);
+  --teal:#2de2d0;
+  --teal-dim:#128a83;
+  --green:#58ff8f;
+  --orange:#ff9a2e;
+  --red:#ff5a3c;
+  --ink:#c9f3ee;
+  --dim:#6fa5a3;
+  --line:rgba(45,226,208,.36);
+  --f-display:'Rajdhani','Arial Narrow',system-ui,sans-serif;
+  --f-mono:'Share Tech Mono',ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-mono);font-size:12px;line-height:1.45;overflow:hidden;-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+button,input{font:inherit;color:inherit}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#gl.grabbing{cursor:grabbing}
+#gl.pointer{cursor:pointer}
+
+.fx{position:fixed;inset:0;pointer-events:none}
+.fx.grid{background:
+  linear-gradient(rgba(45,226,208,.045) 1px,transparent 1px) 0 0/48px 48px,
+  linear-gradient(90deg,rgba(45,226,208,.045) 1px,transparent 1px) 0 0/48px 48px;
+  -webkit-mask:radial-gradient(ellipse at center,transparent 30%,#000 100%);mask:radial-gradient(ellipse at center,transparent 30%,#000 100%)}
+.fx.scan{background:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 1px,transparent 1px 3px);mix-blend-mode:multiply;opacity:.45}
+.fx.vig{background:radial-gradient(ellipse at center,transparent 55%,rgba(0,4,8,.7) 100%)}
+#links{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+#links line{stroke:var(--green);stroke-width:1;stroke-dasharray:3 3;opacity:0}
+#links line.hover,#links line.sel{stroke:var(--orange)}
+#links circle{fill:var(--green);opacity:0}
+#links circle.hover,#links circle.sel{fill:var(--orange)}
+
+.tag{position:fixed;left:0;top:0;z-index:5;will-change:transform,opacity;opacity:0;pointer-events:none;cursor:pointer;text-align:left;
+  background:rgba(2,12,17,.86);border:1px solid var(--green);color:#e9fff3;padding:3px 9px 4px;white-space:nowrap;
+  font-family:var(--f-display);font-weight:600;font-size:14px;letter-spacing:.1em;text-transform:uppercase}
+.tag small{display:block;font-family:var(--f-mono);font-weight:400;font-size:9.5px;letter-spacing:.12em;color:var(--dim)}
+.tag.hover{border-color:var(--orange);color:#fff3df;box-shadow:0 0 14px rgba(255,154,46,.45)}
+.tag.sel{border-color:var(--orange);background:rgba(36,18,0,.88);color:#ffe6bf}
+.tag:focus-visible,.zrow:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+
+#ui{position:fixed;inset:0;display:grid;pointer-events:none;gap:14px;
+  padding:calc(16px + env(safe-area-inset-top,0px)) 18px calc(16px + env(safe-area-inset-bottom,0px));
+  grid-template-columns:minmax(0,300px) minmax(0,1fr) minmax(0,340px);
+  grid-template-rows:auto minmax(0,1fr);
+  grid-template-areas:"brand gen slot" "diag . slot"}
+#ui>*{pointer-events:auto}
+#brand{grid-area:brand}#gen{grid-area:gen;align-self:start;justify-self:center;width:min(100%,720px)}#diag{grid-area:diag;align-self:start;min-height:0}
+#slot{grid-area:slot;min-height:0;display:flex;flex-direction:column;overflow:hidden;pointer-events:none}
+#slot>*{pointer-events:auto}
+
+.hud{position:relative;background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);padding:10px 12px 11px;min-width:0}
+.hud::before{content:"";position:absolute;inset:0;pointer-events:none;background:
+  linear-gradient(var(--teal),var(--teal)) top left/12px 2px no-repeat,linear-gradient(var(--teal),var(--teal)) top left/2px 12px no-repeat,
+  linear-gradient(var(--teal),var(--teal)) top right/12px 2px no-repeat,linear-gradient(var(--teal),var(--teal)) top right/2px 12px no-repeat,
+  linear-gradient(var(--teal),var(--teal)) bottom left/12px 2px no-repeat,linear-gradient(var(--teal),var(--teal)) bottom left/2px 12px no-repeat,
+  linear-gradient(var(--teal),var(--teal)) bottom right/12px 2px no-repeat,linear-gradient(var(--teal),var(--teal)) bottom right/2px 12px no-repeat}
+.hud h2{margin:0 0 7px;display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-family:var(--f-display);font-weight:600;font-size:12.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--teal)}
+.hud h2 em{font-style:normal;font-family:var(--f-mono);font-size:10px;letter-spacing:.08em;color:var(--orange)}
+.k{color:var(--dim)}.g{color:var(--green)}.o{color:var(--orange)}.r{color:var(--red)}.t{color:var(--teal)}
+.row{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.row>span:last-child{text-align:right}
+.num{font-variant-numeric:tabular-nums}
+
+#brand{padding:9px 12px 10px}
+#brand h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:21px;letter-spacing:.26em;color:#e8fffb;line-height:1;white-space:nowrap}
+#brand p{margin:5px 0 0;font-size:10.5px;letter-spacing:.08em;color:var(--dim)}
+
+.bar{height:8px;background:rgba(45,226,208,.12);-webkit-mask:repeating-linear-gradient(90deg,#000 0 5px,transparent 5px 7px);mask:repeating-linear-gradient(90deg,#000 0 5px,transparent 5px 7px)}
+.bar>i{display:block;height:100%;width:0;background:var(--teal)}
+.bar.g>i{background:var(--green)}.bar.o>i{background:var(--orange)}.bar.r>i{background:var(--red)}
+.chip{display:inline-block;border:1px solid currentColor;padding:0 6px;font-size:10px;letter-spacing:.1em;white-space:nowrap}
+
+/* generator */
+#gen{display:grid;gap:8px;padding:8px 10px}
+#tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+#tabs::-webkit-scrollbar{display:none}
+.ptab{flex:1 0 auto;background:transparent;border:1px solid var(--line);padding:4px 10px 5px;cursor:pointer;text-align:left;font-family:var(--f-display);font-weight:600;letter-spacing:.14em;font-size:13px;color:var(--ink);white-space:nowrap}
+.ptab small{display:block;font-family:var(--f-mono);font-weight:400;font-size:9px;color:var(--dim);letter-spacing:.06em}
+.ptab:hover{background:rgba(45,226,208,.1)}
+.ptab.on{border-color:var(--orange);color:#fff1da;background:rgba(255,154,46,.13)}
+.seedrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.seedrow label{color:var(--dim);letter-spacing:.14em;font-size:10px}
+#seedIn{background:rgba(0,0,0,.35);border:1px solid var(--line);color:var(--teal);font-size:13px;letter-spacing:.14em;padding:4px 8px;width:112px;text-transform:uppercase}
+.btn{background:transparent;border:1px solid var(--teal);color:var(--teal);padding:4px 10px;cursor:pointer;letter-spacing:.14em;font-size:11px}
+.btn:hover:not(:disabled){background:rgba(45,226,208,.14)}
+.btn.primary{margin-left:auto;border-color:var(--green);color:var(--green);background:rgba(88,255,143,.1);font-family:var(--f-display);font-weight:700;font-size:14px;letter-spacing:.22em;padding:3px 14px}
+.btn.primary:hover:not(:disabled){background:rgba(88,255,143,.24)}
+.btn:disabled{opacity:.6;cursor:progress}
+
+/* stats */
+.graph{display:grid;grid-template-columns:1fr 92px;gap:8px;align-items:center;margin-bottom:6px}
+.graph canvas{width:92px;height:30px;display:block;border:1px solid rgba(45,226,208,.2);background:rgba(45,226,208,.04)}
+.graph b{display:block;font-weight:400;color:#e8fffb;font-size:14px}
+.counters{display:grid;gap:1px;margin-top:6px;padding-top:6px;border-top:1px dashed rgba(45,226,208,.25)}
+.swatch{display:inline-block;width:8px;height:8px;margin-right:6px;vertical-align:baseline;border-radius:50%}
+#evt{margin-top:7px;padding-top:6px;border-top:1px dashed rgba(45,226,208,.25);color:var(--teal);font-size:11px;min-height:2.9em}
+
+/* zone index + panel */
+#zoneIndex,#panel{overflow:auto;scrollbar-width:thin;scrollbar-color:var(--teal-dim) transparent}
+.zrow{display:grid;grid-template-columns:28px 1fr auto;gap:8px;align-items:center;width:100%;text-align:left;background:transparent;border:0;border-top:1px solid rgba(45,226,208,.18);padding:7px 2px;cursor:pointer}
+.zrow:hover,.zrow.hover{background:rgba(255,154,46,.1)}
+.zrow b{font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:#e8fffb}
+.zrow small{display:block;font-family:var(--f-mono);font-weight:400;font-size:9.5px;color:var(--dim);letter-spacing:.08em}
+.zrow .zn{color:var(--green)}
+.hint{margin:8px 0 0;color:var(--dim);font-size:10.5px}
+#panel{animation:slide .45s cubic-bezier(.2,.8,.2,1)}
+@keyframes slide{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+.ph{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.ph .eyebrow{font-family:var(--f-display);font-weight:600;letter-spacing:.2em;font-size:11px;color:var(--orange)}
+#pClose{background:transparent;border:1px solid var(--line);width:24px;height:24px;line-height:1;font-size:16px;cursor:pointer;color:var(--teal)}
+#pName{margin:0;font-family:var(--f-display);font-weight:700;font-size:26px;letter-spacing:.06em;text-transform:uppercase;color:#f0fffc;line-height:1.05;text-wrap:balance}
+.zid{margin:3px 0 8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.sec{margin-top:8px;padding-top:6px;border-top:1px dashed rgba(45,226,208,.28)}
+.sec>.lab{display:block;font-family:var(--f-display);font-weight:600;font-size:11px;letter-spacing:.2em;color:var(--teal);margin-bottom:5px;text-transform:uppercase}
+.comp{display:flex;height:9px;gap:1px;margin-bottom:6px}
+.comp i{display:block;height:100%}
+.legend{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px 8px;font-size:10.5px}
+.legend span::before{content:"";display:inline-block;width:7px;height:7px;margin-right:6px;background:var(--c)}
+.pips{display:flex;gap:4px;margin-bottom:4px}
+.pips i{width:100%;height:9px;border:1px solid var(--line);background:transparent}
+.pips i.on{background:var(--c);border-color:var(--c);box-shadow:0 0 8px var(--c)}
+.big{font-family:var(--f-display);font-weight:700;font-size:34px;line-height:1;color:var(--green);margin-right:8px}
+.resg{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;margin-top:6px}
+.res{display:grid;grid-template-columns:58px 1fr 22px;gap:6px;align-items:center;font-size:10px}
+.res span:last-child{text-align:right}
+.notes{margin:0;padding:0;list-style:none;display:grid;gap:3px;font-size:11.5px}
+.notes li::before{content:"› ";color:var(--teal)}
+.risk{margin-top:6px;color:var(--orange)}
+.deploy{position:relative;margin-top:12px;width:100%;padding:10px 12px;background:rgba(88,255,143,.1);border:1px solid var(--green);color:var(--green);cursor:pointer;
+  font-family:var(--f-display);font-weight:700;font-size:15px;letter-spacing:.24em;text-transform:uppercase;overflow:hidden}
+.deploy:hover:not(:disabled){background:rgba(88,255,143,.22)}
+.deploy::after{content:"";position:absolute;left:0;bottom:0;height:3px;width:var(--p,0%);background:var(--orange)}
+.deploy:disabled{cursor:default;color:var(--orange);border-color:var(--orange);background:rgba(255,154,46,.08)}
+.deploy.done{color:var(--green);border-color:var(--green)}
+.hintbar{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:2;pointer-events:none;color:var(--dim);font-size:10.5px;letter-spacing:.16em;text-align:center;white-space:nowrap}
+#nogl{position:fixed;inset:0;display:none;place-items:center;text-align:center;padding:24px;color:var(--orange);font-size:14px;letter-spacing:.1em;z-index:20;background:var(--bg)}
+@media (max-height:760px){.graph{display:none}}
+@media (max-width:1200px){.hintbar{display:none}}
+
+@media (max-width:860px){
+  #ui{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto;grid-template-areas:"brand" "gen" "." "slot";gap:10px;padding-left:16px;padding-right:16px}
+  #diag{display:none}
+  #gen{width:100%}
+  #brand h1{font-size:19px;letter-spacing:.24em}
+  #slot{max-height:46vh}
+  #zlist{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+  .zrow{grid-template-columns:24px 1fr}
+  .zrow .chip{display:none}
+  .zrow b{font-size:13.5px}
+  #zoneIndex .hint{display:none}
+  .btn.primary{margin-left:0}
+}
+@media (prefers-reduced-motion:reduce){#panel{animation:none}}
+</style>
+
+<canvas id="gl" aria-label="Interactive 3D planet. Drag to rotate, scroll to zoom, select a hexagonal marker to inspect a landing zone."></canvas>
+<div class="fx grid"></div><div class="fx vig"></div><div class="fx scan"></div>
+<svg id="links" aria-hidden="true"></svg>
+<div id="tags"></div>
+
+<div id="ui">
+  <header id="brand" class="hud">
+    <h1>NEW HORIZON</h1>
+    <p id="brandSub">ORBITAL SURVEY</p>
+  </header>
+
+  <section id="gen" class="hud" aria-label="Planet generator">
+    <div id="tabs" role="tablist" aria-label="Planet type"></div>
+    <div class="seedrow">
+      <label for="seedIn">SEED</label>
+      <input id="seedIn" type="text" maxlength="12" spellcheck="false" autocomplete="off" aria-label="Planet seed">
+      <button id="seedApply" class="btn" type="button">LOAD</button>
+      <button id="regen" class="btn primary" type="button">REGENERATE</button>
+    </div>
+  </section>
+
+  <section id="diag" class="hud" aria-label="Render stats">
+    <h2>System <em id="dPlanet">--</em></h2>
+    <div class="graph"><div><span class="k">FRAME TIME</span><b class="num" id="dRender">-- ms</b></div><canvas id="gRender" width="184" height="60"></canvas></div>
+    <div class="counters">
+      <div class="row"><span class="k">FRAME RATE</span><span class="t num" id="dFps">--</span></div>
+      <div class="row"><span class="k">RESOLUTION SCALE</span><span class="t num" id="dRes">--</span></div>
+      <div class="row"><span class="k">QUALITY TIER</span><span class="t" id="dTier">--</span></div>
+      <div class="row"><span class="k">MESH TRIANGLES</span><span class="t num" id="dTris">--</span></div>
+      <div class="row"><span class="k">STAR</span><span class="t" id="dStar">--</span></div>
+      <div class="row"><span class="k">MOONS</span><span class="t num" id="dMoons">--</span></div>
+      <div class="row"><span class="k">ASTEROID BELT</span><span class="t" id="dBelt">--</span></div>
+      <div class="row"><span class="k">PLANETARY RING</span><span class="t" id="dRing">--</span></div>
+      <div class="row"><span class="k">STORM SYSTEMS</span><span class="t num" id="dStorm">--</span></div>
+      <div class="row"><span class="k">DIAMETER</span><span class="t num" id="dDiam">--</span></div>
+    </div>
+    <div id="evt">› READY</div>
+  </section>
+
+  <div id="slot">
+    <aside id="zoneIndex" class="hud" aria-label="Landing zone index">
+      <h2>Landing Zone Index <em id="zCount">-- SITES</em></h2>
+      <div id="zlist"></div>
+      <p class="hint">Select a hexagonal marker on the planet, or a row above, to open its specification.</p>
+    </aside>
+    <aside id="panel" class="hud" hidden aria-label="Landing Zone Specification Panel"></aside>
+  </div>
+</div>
+
+<div class="hintbar">DRAG TO ROTATE · SCROLL TO ZOOM · SELECT A HEXAGON · REGENERATE FOR A NEW SEED</div>
+<div id="nogl">WEBGL IS UNAVAILABLE IN THIS VIEWER.<br>OPEN THE PAGE IN A BROWSER WITH HARDWARE ACCELERATION.</div>
+
+<!-- ============ GLSL ============ -->
+<script type="x-shader/common" id="glsl-common">
+uniform float uTime;
+
+vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}
+vec4 mod289(vec4 x){return x-floor(x*(1.0/289.0))*289.0;}
+vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}
+vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-0.85373472095314*r;}
+
+float snoise(vec3 v){
+  const vec2 C=vec2(1.0/6.0,1.0/3.0);
+  const vec4 D=vec4(0.0,0.5,1.0,2.0);
+  vec3 i=floor(v+dot(v,C.yyy));
+  vec3 x0=v-i+dot(i,C.xxx);
+  vec3 g=step(x0.yzx,x0.xyz);
+  vec3 l=1.0-g;
+  vec3 i1=min(g.xyz,l.zxy);
+  vec3 i2=max(g.xyz,l.zxy);
+  vec3 x1=x0-i1+C.xxx;
+  vec3 x2=x0-i2+C.yyy;
+  vec3 x3=x0-D.yyy;
+  i=mod289(i);
+  vec4 p=permute(permute(permute(i.z+vec4(0.0,i1.z,i2.z,1.0))+i.y+vec4(0.0,i1.y,i2.y,1.0))+i.x+vec4(0.0,i1.x,i2.x,1.0));
+  float n_=0.142857142857;
+  vec3 ns=n_*D.wyz-D.xzx;
+  vec4 j=p-49.0*floor(p*ns.z*ns.z);
+  vec4 x_=floor(j*ns.z);
+  vec4 y_=floor(j-7.0*x_);
+  vec4 x=x_*ns.x+ns.yyyy;
+  vec4 y=y_*ns.x+ns.yyyy;
+  vec4 h=1.0-abs(x)-abs(y);
+  vec4 b0=vec4(x.xy,y.xy);
+  vec4 b1=vec4(x.zw,y.zw);
+  vec4 s0=floor(b0)*2.0+1.0;
+  vec4 s1=floor(b1)*2.0+1.0;
+  vec4 sh=-step(h,vec4(0.0));
+  vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy;
+  vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
+  vec3 p0=vec3(a0.xy,h.x);
+  vec3 p1=vec3(a0.zw,h.y);
+  vec3 p2=vec3(a1.xy,h.z);
+  vec3 p3=vec3(a1.zw,h.w);
+  vec4 norm=taylorInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));
+  p0*=norm.x;p1*=norm.y;p2*=norm.z;p3*=norm.w;
+  vec4 m=max(0.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.0);
+  m=m*m;
+  return 42.0*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
+}
+
+float fbm5(vec3 p){
+  float a=0.5;float s=0.0;
+  for(int i=0;i<5;i++){s+=a*snoise(p);p=p*2.03+vec3(1.7,9.2,3.1);a*=0.5;}
+  return s;
+}
+float fbm4(vec3 p){
+  float a=0.5;float s=0.0;
+  for(int i=0;i<4;i++){s+=a*snoise(p);p=p*2.03+vec3(1.7,9.2,3.1);a*=0.5;}
+  return s;
+}
+
+vec3 hash3(vec3 p){
+  p=fract(p*vec3(.1031,.1030,.0973));
+  p+=dot(p,p.yxz+33.33);
+  return fract((p.xxy+p.yxx)*p.zyx);
+}
+/* returns F1 distance and the vector from the point to the nearest feature point */
+vec4 voronoi(vec3 x){
+  vec3 p=floor(x);
+  vec3 f=fract(x);
+  float best=8.0;
+  vec3 bd=vec3(0.0);
+  for(int k=-1;k<=1;k++){
+    for(int j=-1;j<=1;j++){
+      for(int i=-1;i<=1;i++){
+        vec3 g=vec3(float(i),float(j),float(k));
+        vec3 o=hash3(p+g);
+        vec3 r=g+o-f;
+        float d=dot(r,r);
+        if(d<best){best=d;bd=r;}
+      }
+    }
+  }
+  return vec4(sqrt(best),bd);
+}
+</script>
+
+<script type="x-shader/common" id="glsl-terrain">
+uniform vec3 uSeed;
+uniform vec4 uT0;
+uniform vec4 uT1;
+uniform vec4 uT2;
+uniform float uAmp;
+uniform float uGrow;
+
+/* vertical displacement in planet radii; sea level is h = 0 */
+float disp(float h){
+  return (h>0.0 ? 0.04*pow(h,1.3) : 0.03*h)*uAmp*uGrow;
+}
+/* macro terrain height; mirrored exactly by terrainH() in the page script so landing sites can be placed on matching ground */
+float macroH(vec3 p){
+  float c=fbm5(p*uT0.x+uSeed);
+  float h=(c-uT0.y)*uT0.z;
+  float r=1.0-abs(snoise(p*uT1.x+uSeed.yzx*1.37));
+  r=pow(max(r,0.0),uT1.y);
+  h+=r*smoothstep(uT1.z,uT1.w,h)*uT0.w;
+  h+=uT2.z*snoise(p*uT2.w+uSeed.zxy);
+  if(uT2.x>0.0){
+    float u=h*uT2.y;
+    float st=(floor(u)+smoothstep(0.3,0.7,fract(u)))/uT2.y;
+    h=mix(h,st,uT2.x*smoothstep(0.05,0.3,h));
+  }
+  return h;
+}
+</script>
+
+<script type="x-shader/vertex" id="glsl-planet-vs">
+attribute float aH;
+varying vec3 vUnit;
+varying vec3 vPos;
+varying vec3 vNrm;
+varying float vH;
+uniform float uGrow;
+void main(){
+  vec3 p=normalize(position);
+  float len=length(position);
+  vec3 pos=p*(1.0+(len-1.0)*uGrow);
+  vUnit=p;
+  vPos=pos;
+  vNrm=normal;
+  vH=aH;
+  gl_Position=projectionMatrix*modelViewMatrix*vec4(pos,1.0);
+}
+</script>
+
+<script type="x-shader/fragment" id="glsl-planet-fs">
+uniform vec3 uLight;
+uniform vec3 uLight2;
+uniform vec3 uCam;
+uniform float uQ;
+uniform vec3 uSunCol;
+uniform vec3 uSunCol2;
+uniform vec3 uLiqS;
+uniform vec3 uLiqM;
+uniform vec3 uLiqD;
+uniform vec4 uLiq;
+uniform vec4 uLiqEmis;
+uniform float uCrust;
+uniform vec3 uSand;
+uniform vec3 uDry;
+uniform vec3 uMid;
+uniform vec3 uWetA;
+uniform vec3 uWetB;
+uniform vec3 uRockA;
+uniform vec3 uRockB;
+uniform vec3 uHigh;
+uniform vec4 uLand;
+uniform vec4 uLand2;
+uniform vec3 uCrackCol;
+uniform vec4 uGlow;
+uniform vec3 uAmbCol;
+uniform vec3 uRimCol;
+uniform vec4 uFeat;
+varying vec3 vUnit;
+varying vec3 vPos;
+varying vec3 vNrm;
+varying float vH;
+
+void main(){
+  vec3 p=normalize(vUnit);
+  vec3 L=normalize(uLight);
+  vec3 L2=normalize(uLight2);
+  vec3 V=normalize(uCam-vPos);
+  vec3 nM=normalize(vNrm);
+  float lat=abs(p.y);
+  float fine=snoise(p*22.0);
+  float h=vH+0.035*fine;
+  float ndlR=dot(p,L);
+  float ndlR2=dot(p,L2);
+
+  /* river field: a thin meandering zero-crossing of a warped noise, antialiased with screen derivatives */
+  float rv=1.0,rvw=0.0;
+  if(uFeat.y>0.0 && uQ<1.5){
+    float w1=snoise(p*uFeat.z+uSeed.yzx*2.3);
+    w1+=0.07*snoise(p*uFeat.z*2.7+uSeed*1.9);
+    rv=abs(w1);
+    rvw=fwidth(rv);
+  }
+
+  vec3 col;
+  vec3 n=nM;
+  float water=0.0;
+  vec3 emis=vec3(0.0);
+
+  if(vH<0.0){
+    /* liquid, or dry sea floor when the spec strength is zero */
+    float depth=clamp(-h/uLiq.x,0.0,1.0);
+    col=mix(uLiqS,uLiqM,smoothstep(0.0,0.22,depth));
+    col=mix(col,uLiqD,smoothstep(0.22,1.0,depth));
+    col+=vec3(0.45)*smoothstep(-0.06,0.0,h)*uLiq.w;
+    water=uLiq.y;
+    n=normalize(p+uLiq.z*vec3(snoise(p*80.0+uTime*0.15),snoise(p*80.0+vec3(5.0,3.0,1.0)-uTime*0.12),snoise(p*80.0+vec3(9.0,7.0,2.0)+uTime*0.1)));
+    if(uLiqEmis.w>0.0){
+      float cr=0.5+0.5*snoise(p*14.0+vec3(0.0,uTime*0.03,0.0)+uSeedLiq());
+      float crust=smoothstep(0.42,0.68,cr)*uCrust;
+      col=mix(col,vec3(0.07,0.03,0.025),crust);
+      float pulse=0.8+0.2*snoise(p*30.0+uTime*0.2);
+      emis+=uLiqEmis.rgb*uLiqEmis.w*(1.0-crust)*pulse;
+      water*=1.0-crust;
+    }
+    float ice=smoothstep(uLand2.y+0.04,uLand2.y+0.1,lat+0.03*fine);
+    col=mix(col,uHigh*0.95,ice);
+    water*=1.0-ice;
+  }else{
+    float m=0.5+0.5*snoise(p*2.1+vec3(11.0,3.0,7.0)+uSeed.yzx);
+    m+=(1.0-lat)*0.28-0.12+uLand.x;
+    m-=max(h,0.0)*0.22;
+    float slope=1.0-dot(nM,p);
+
+    vec3 dry=mix(uDry,uDry*1.15,0.5+0.5*fine);
+    vec3 mid=mix(uMid,uMid*1.15,0.5+0.5*snoise(p*30.0));
+    vec3 wet=mix(uWetA,uWetB,0.5+0.5*snoise(p*12.0));
+    float fa=smoothstep(0.42,0.6,m);
+    if(fa>0.01 && uLand.y>0.01 && uQ<1.5){
+      vec4 v=voronoi(p*uLand.z);
+      float dome=1.0-clamp(v.x,0.0,1.0);
+      wet=mix(uWetA,uWetB,smoothstep(0.05,0.8,dome));
+      wet*=0.85+0.3*snoise(p*9.0);
+      vec3 tl=v.yzw;
+      tl-=dot(tl,p)*p;
+      n=normalize(n-tl*0.9*fa*uLand.y);
+    }
+    vec3 base=mix(dry,mid,smoothstep(0.28,0.46,m));
+    base=mix(base,wet,fa);
+
+    float beach=1.0-smoothstep(0.0,0.045,h);
+    base=mix(base,uSand,beach);
+
+    vec3 rock=mix(uRockA,uRockB,0.5+0.5*snoise(p*45.0));
+    float rockAmt=clamp(smoothstep(uLand2.z,uLand2.z+0.28,h)+smoothstep(0.1,0.3,slope)*0.8,0.0,1.0);
+    base=mix(base,rock,rockAmt);
+    n=normalize(n+0.22*rockAmt*vec3(snoise(p*60.0),snoise(p*60.0+7.0),snoise(p*60.0+13.0)));
+    n=normalize(n+uLand.w*(1.0-rockAmt)*vec3(snoise(p*120.0),snoise(p*120.0+7.0),snoise(p*120.0+13.0)));
+
+    float snow=smoothstep(uLand2.x,uLand2.x+0.15,h+lat*0.4+0.08*fine)*(1.0-smoothstep(0.3,0.6,slope)*0.6);
+    snow=max(snow,smoothstep(uLand2.y,uLand2.y+0.08,lat+0.03*fine));
+    base=mix(base,uHigh,snow);
+
+    /* inland lakes on low flat ground, rivers running from the highlands down to the sea */
+    float lake=0.0,river=0.0;
+    if(uFeat.x<2.0 && uQ<2.5){
+      float ln=snoise(p*6.5+uSeed.zxy*1.7)+0.35*snoise(p*17.0+uSeed);
+      lake=smoothstep(uFeat.x,uFeat.x+0.07,ln)*(1.0-smoothstep(0.14,0.32,h))*smoothstep(0.012,0.035,h)*(1.0-snow*0.7);
+    }
+    if(uFeat.y>0.0 && uQ<1.5){
+      float wd=uFeat.y*(1.0+1.6*(1.0-smoothstep(0.0,0.6,h)));
+      river=(1.0-smoothstep(wd,wd+rvw*1.3+0.002,rv))*smoothstep(0.02,0.07,h)*(1.0-smoothstep(0.9,1.3,h));
+    }
+    float wetm=max(lake,river);
+    if(wetm>0.01){
+      vec3 lc=mix(uLiqS,uLiqM,0.3+0.5*lake);
+      base=mix(base,lc,wetm);
+      water=max(water,wetm*uLiq.y);
+      n=normalize(mix(n,p,wetm));
+      if(uLiqEmis.w>0.0) emis+=uLiqEmis.rgb*uLiqEmis.w*wetm*(0.85+0.15*sin(uTime*1.7+p.x*40.0));
+    }
+
+    if(uGlow.x>0.5 && uGlow.x<1.5){
+      float crack=(1.0-smoothstep(0.0,0.04,abs(snoise(p*uGlow.z+uSeed))))*(1.0-smoothstep(0.1,0.9,h)*0.5)*(1.0-snow);
+      emis+=uCrackCol*crack*uGlow.y*(0.75+0.25*sin(uTime*1.3+p.x*20.0));
+    }else if(uGlow.x>1.5){
+      float spots=smoothstep(0.5,0.8,snoise(p*uGlow.z+uSeed))*fa;
+      emis+=uCrackCol*spots*uGlow.y*(0.7+0.3*sin(uTime*1.1+p.y*30.0));
+    }
+    col=base;
+  }
+
+  /* ridge shadows from the primary star: short horizon march along the macro height field */
+  float shadow=1.0;
+  if(uQ<0.5 && vH>-0.05 && ndlR>-0.25){
+    for(int i=0;i<5;i++){
+      float s=0.005*pow(2.0,float(i));
+      vec3 q=vPos+L*s;
+      float rayR=length(q);
+      float tr=1.0+disp(macroH(q/rayR));
+      shadow=min(shadow,smoothstep(-0.0015,0.003,rayR-tr+0.0006));
+    }
+  }
+
+  float dif=max(dot(n,L),0.0)*shadow;
+  float dif2=max(dot(n,L2),0.0);
+  vec3 amb=uAmbCol+uAmbCol*0.6*(0.5+0.5*ndlR);
+  vec3 outc=col*(amb+uSunCol*dif+uSunCol2*dif2);
+
+  if(water>0.0){
+    vec3 H=normalize(L+V);
+    float nh=max(dot(n,H),0.0);
+    float sp=pow(nh,160.0)*1.6+pow(nh,22.0)*0.18;
+    outc+=uSunCol*sp*smoothstep(0.0,0.12,ndlR)*water;
+    vec3 H2=normalize(L2+V);
+    float nh2=max(dot(n,H2),0.0);
+    outc+=uSunCol2*(pow(nh2,160.0)*1.6+pow(nh2,22.0)*0.18)*smoothstep(0.0,0.12,ndlR2)*water;
+    float fr=pow(1.0-max(dot(n,V),0.0),4.0);
+    outc+=uRimCol*fr*0.4*max(max(ndlR,0.05),ndlR2*0.6)*water;
+  }
+  float rim=pow(1.0-max(dot(p,V),0.0),3.0);
+  float lit=max(smoothstep(-0.2,0.5,ndlR),smoothstep(-0.2,0.5,ndlR2)*clamp(length(uSunCol2),0.0,1.0));
+  outc+=uRimCol*rim*0.5*lit;
+  outc+=emis;
+  gl_FragColor=vec4(outc,1.0);
+}
+</script>
+
+<script type="x-shader/vertex" id="glsl-cloud-vs">
+varying vec3 vUnit;
+varying vec3 vNW;
+void main(){
+  vUnit=normalize(position);
+  vNW=normalize(mat3(modelMatrix)*normal);
+  gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
+}
+</script>
+
+<script type="x-shader/fragment" id="glsl-cloud-fs">
+uniform vec3 uLightW;
+uniform vec3 uLightW2;
+uniform vec3 uSunCol;
+uniform vec3 uSunCol2;
+uniform vec3 uSeed;
+uniform vec3 uCloudA;
+uniform vec3 uCloudB;
+uniform vec4 uCloudP;
+uniform vec4 uCloudS;
+uniform vec4 uStorm[3];
+uniform vec4 uFlash;
+uniform vec3 uFlashCol;
+varying vec3 vUnit;
+varying vec3 vNW;
+vec3 rotAxis(vec3 q,vec3 a,float ang){
+  float c=cos(ang),s=sin(ang);
+  return q*c+cross(a,q)*s+a*dot(a,q)*(1.0-c);
+}
+void main(){
+  vec3 N=normalize(vNW);
+  float t=uTime;
+  vec3 q=normalize(vUnit);
+  /* cyclones: shear the cloud field around each storm centre, thicken the wall, open an eye */
+  float stormD=0.0;
+  vec3 q0=q;
+  for(int i=0;i<3;i++){
+    vec4 s=uStorm[i];
+    float d=acos(clamp(dot(q,s.xyz),-1.0,1.0));
+    float rr=max(s.w,0.001);
+    float f=exp(-(d*d)/(rr*rr));
+    float e=exp(-(d*d)/(rr*rr*0.03));
+    float ang=f*(7.0+1.5*sin(t*0.2+float(i)))*(s.y>=0.0?1.0:-1.0);
+    q=rotAxis(q,s.xyz,ang);
+    /* spiral rain bands that rotate around the eye */
+    vec3 ux=normalize(cross(s.xyz,abs(s.y)<0.95?vec3(0.0,1.0,0.0):vec3(1.0,0.0,0.0)));
+    vec3 uy=cross(s.xyz,ux);
+    float sg=(s.y>=0.0?1.0:-1.0);
+    float th=atan(dot(q0,uy),dot(q0,ux));
+    float arms=sin(3.0*th*sg+(d/rr)*9.0-t*1.4*sg);
+    stormD+=f*(0.45+0.4*arms*(1.0-e))-e*1.0;
+  }
+  float a=t*uCloudS.y;
+  q.xz=mat2(cos(a),-sin(a),sin(a),cos(a))*q.xz;
+  float warp=snoise(q*2.6+vec3(0.0,t*0.01,0.0)+uSeed);
+  float d1=fbm4(q*uCloudS.x+warp*uCloudP.w+uSeed*0.7);
+  float d2=snoise(q*uCloudS.x*3.0+vec3(t*0.02,0.0,-t*0.015)+warp+uSeed);
+  float dens=d1*1.0+d2*uCloudS.z*0.7+stormD;
+  float cover=smoothstep(uCloudP.x,uCloudP.y,dens);
+  float l1=smoothstep(-0.12,0.45,dot(N,uLightW));
+  float l2=smoothstep(-0.12,0.45,dot(N,uLightW2));
+  vec3 base=mix(uCloudA,uCloudB,smoothstep(-0.3,0.5,d2+warp*0.5));
+  vec3 col=base*(0.05+uSunCol*l1*0.85+uSunCol2*l2*0.85)+uCloudB*uCloudS.w*0.25;
+  float night=max(l1,l2*clamp(length(uSunCol2),0.0,1.0));
+  float alpha=cover*uCloudP.z*(0.35+0.65*night);
+  /* lightning flash lighting the cloud deck from within */
+  if(uFlash.w>0.01){
+    float fd=acos(clamp(dot(normalize(vUnit),uFlash.xyz),-1.0,1.0));
+    float g=(exp(-fd*fd/0.006)+0.35*exp(-fd*fd/0.05))*uFlash.w;
+    col+=uFlashCol*g*5.0;
+    alpha=max(alpha,cover*min(g,1.0)*0.95+g*0.15);
+  }
+  gl_FragColor=vec4(col,alpha);
+}
+</script>
+
+<script type="x-shader/vertex" id="glsl-atm-vs">
+varying vec3 vNW;
+varying vec3 vWp;
+varying vec3 vNV;
+varying vec3 vVP;
+void main(){
+  vNW=normalize(mat3(modelMatrix)*normal);
+  vNV=normalize(normalMatrix*normal);
+  vec4 wp=modelMatrix*vec4(position,1.0);
+  vWp=wp.xyz;
+  vec4 mv=modelViewMatrix*vec4(position,1.0);
+  vVP=mv.xyz;
+  gl_Position=projectionMatrix*mv;
+}
+</script>
+
+<script type="x-shader/fragment" id="glsl-atm-fs">
+uniform vec3 uLightW;
+uniform vec3 uLightW2;
+uniform vec3 uSunCol2;
+uniform vec3 uAtmA;
+uniform vec3 uAtmB;
+uniform vec4 uAtmP;
+uniform float uMode;
+uniform vec4 uAur;
+varying vec3 vNW;
+varying vec3 vWp;
+varying vec3 vNV;
+varying vec3 vVP;
+void main(){
+  vec3 Nw=normalize(vNW);
+  float sunF=max(smoothstep(-0.35,0.55,dot(Nw,uLightW)),smoothstep(-0.35,0.55,dot(Nw,uLightW2))*clamp(length(uSunCol2),0.0,1.0));
+  if(uMode<0.5){
+    vec3 V=normalize(cameraPosition-vWp);
+    float g=1.0-max(dot(Nw,V),0.0);
+    float f=pow(g,4.0)*(1.0-smoothstep(0.84,1.0,g));
+    vec3 c=mix(uAtmA,uAtmB,smoothstep(0.5,0.9,g));
+    float la=abs(Nw.y);
+    float band=smoothstep(0.66,0.78,la)*(1.0-smoothstep(0.88,0.97,la));
+    float cur=0.5+0.5*sin(atan(Nw.z,Nw.x)*7.0+3.0*snoise(Nw*3.0+uTime*0.12)+uTime*0.2);
+    float aur=band*(0.3+0.7*cur)*uAur.w*(1.0-0.85*sunF);
+    gl_FragColor=vec4(c*f*uAtmP.x*(0.15+0.85*sunF)+uAur.rgb*aur,1.0);
+  }else{
+    float t=clamp(-dot(normalize(vNV),normalize(-vVP)),0.0,1.0);
+    float i=pow(clamp(t/0.5,0.0,1.0),2.4);
+    vec3 c=mix(uAtmA,uAtmB,i);
+    gl_FragColor=vec4(c,i*uAtmP.y*(0.2+0.8*sunF));
+  }
+}
+</script>
+
+<script type="x-shader/vertex" id="glsl-ring-vs">
+varying vec3 vWp;
+varying float vR;
+void main(){
+  vR=length(position.xz);
+  vWp=(modelMatrix*vec4(position,1.0)).xyz;
+  gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
+}
+</script>
+
+<script type="x-shader/fragment" id="glsl-ring-fs">
+uniform vec3 uLightW;
+uniform vec3 uLightW2;
+uniform vec3 uSunCol;
+uniform vec3 uSunCol2;
+uniform vec3 uRingS;
+uniform vec3 uRing;
+uniform vec3 uRC1;
+uniform vec3 uRC2;
+varying vec3 vWp;
+varying float vR;
+float shade(vec3 L){
+  float t=dot(vWp,L);
+  if(t>0.0) return 1.0;
+  float d=length(vWp-t*L);
+  return smoothstep(uRing.z*0.97,uRing.z*1.04,d);
+}
+void main(){
+  float r=(vR-uRing.x)/(uRing.y-uRing.x);
+  float n=0.5+0.5*snoise(vec3(r*38.0,uRingS.x,1.0));
+  n=n*0.65+0.35*(0.5+0.5*snoise(vec3(r*120.0,uRingS.y,2.0)));
+  float gap=1.0-0.9*exp(-pow((r-(0.5+0.12*sin(uRingS.z)))*18.0,2.0));
+  float a=smoothstep(0.15,0.8,n)*gap*smoothstep(0.0,0.06,r)*(1.0-smoothstep(0.92,1.0,r))*0.85;
+  vec3 base=mix(uRC1,uRC2,n);
+  vec3 lit=uSunCol*shade(normalize(uLightW))+uSunCol2*shade(normalize(uLightW2));
+  gl_FragColor=vec4(base*(0.06+lit*0.9),a);
+}
+</script>
+
+<script type="x-shader/vertex" id="glsl-moon-vs">
+varying vec3 vUnit;
+varying vec3 vNW;
+void main(){
+  vUnit=normalize(position);
+  vNW=normalize(mat3(modelMatrix)*normal);
+  gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
+}
+</script>
+
+<script type="x-shader/fragment" id="glsl-moon-fs">
+uniform vec3 uLightW;
+uniform vec3 uLightW2;
+uniform vec3 uSunCol;
+uniform vec3 uSunCol2;
+uniform vec3 uC1;
+uniform vec3 uC2;
+uniform vec3 uMs;
+varying vec3 vUnit;
+varying vec3 vNW;
+void main(){
+  vec3 p=normalize(vUnit);
+  float n1=fbm4(p*3.0+uMs);
+  vec3 base=mix(uC1,uC2,smoothstep(-0.3,0.4,n1));
+  vec4 vo=voronoi(p*7.0+uMs);
+  float bowl=1.0-smoothstep(0.0,0.35,vo.x);
+  float lip=smoothstep(0.3,0.42,vo.x)*(1.0-smoothstep(0.42,0.55,vo.x));
+  base*=1.0-0.38*bowl+0.16*lip;
+  vec3 N=normalize(vNW);
+  float l1=smoothstep(-0.03,0.4,dot(N,uLightW));
+  float l2=smoothstep(-0.03,0.4,dot(N,uLightW2));
+  gl_FragColor=vec4(base*(0.025+uSunCol*l1+uSunCol2*l2),1.0);
+}
+</script>
+
+<script type="x-shader/vertex" id="glsl-sun-vs">
+varying vec2 vUv;
+void main(){
+  vUv=uv*2.0-1.0;
+  gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
+}
+</script>
+
+<script type="x-shader/fragment" id="glsl-sun-fs">
+uniform vec3 uCol;
+varying vec2 vUv;
+void main(){
+  float r=length(vUv);
+  float i=exp(-r*r*60.0)*2.2+exp(-r*6.0)*0.5;
+  i*=1.0-smoothstep(0.8,1.0,r);
+  vec3 c=mix(vec3(1.0),uCol,smoothstep(0.0,0.35,r));
+  gl_FragColor=vec4(c*i,i);
+}
+</script>
+
+<script type="x-shader/vertex" id="glsl-star-vs">
+attribute float aSize;
+attribute float aPhase;
+attribute vec3 aColor;
+uniform float uPx;
+varying vec3 vC;
+varying float vBig;
+void main(){
+  vC=aColor*(0.85+0.15*sin(uTime*1.5+aPhase));
+  vBig=smoothstep(4.0,7.0,aSize);
+  vec4 mv=modelViewMatrix*vec4(position,1.0);
+  gl_PointSize=aSize*uPx;
+  gl_Position=projectionMatrix*mv;
+}
+</script>
+
+<script type="x-shader/fragment" id="glsl-star-fs">
+varying vec3 vC;
+varying float vBig;
+void main(){
+  vec2 d=gl_PointCoord-0.5;
+  float r=length(d)*2.0;
+  float core=exp(-r*r*6.0);
+  float halo=exp(-r*4.5)*0.35*vBig;
+  float spike=vBig*0.55*(exp(-abs(d.x)*70.0)*exp(-abs(d.y)*5.0)+exp(-abs(d.y)*70.0)*exp(-abs(d.x)*5.0));
+  float a=(core+halo+spike)*(1.0-smoothstep(0.85,1.0,r));
+  gl_FragColor=vec4(vC*a,a);
+}
+</script>
+
+<script type="x-shader/vertex" id="glsl-sky-vs">
+varying vec3 vDir;
+void main(){
+  vDir=normalize(position);
+  gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
+}
+</script>
+
+<script type="x-shader/fragment" id="glsl-sky-fs">
+uniform vec3 uSeed;
+uniform vec3 uNebA;
+uniform vec3 uNebB;
+uniform float uNebAmt;
+varying vec3 vDir;
+void main(){
+  vec3 d=normalize(vDir);
+  float n=fbm4(d*2.2+vec3(2.0,5.0,1.0)+uSeed*0.05);
+  float band=exp(-pow(dot(d,normalize(vec3(0.35,0.8,-0.5)))*3.2,2.0));
+  float neb=smoothstep(-0.15,0.55,n)*(0.25+0.9*band);
+  vec3 c=vec3(0.006,0.014,0.024);
+  c+=neb*mix(uNebA,uNebB,0.5+0.5*snoise(d*3.0+uSeed*0.05))*uNebAmt;
+  gl_FragColor=vec4(c,1.0);
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+/*PURE-BEGIN*/
+/* ================= seeded generator core (no DOM, no three.js) ================= */
+var DEG=Math.PI/180, TAU=Math.PI*2;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function hashStr(s){var h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function parseSeed(str){str=String(str).trim();if(!str)return 0;if(/^(0x)?[0-9a-f]{1,8}$/i.test(str))return parseInt(str.replace(/^0x/i,''),16)>>>0;return hashStr(str);}
+function seedHex(n){return ('00000000'+(n>>>0).toString(16).toUpperCase()).slice(-8);}
+function clamp(x,a,b){return x<a?a:x>b?b:x;}
+function smoothstep(a,b,x){var t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t);}
+
+/* 3D simplex noise, a line-for-line port of the GLSL version so CPU and GPU agree */
+function m289(x){return x-Math.floor(x*(1/289))*289;}
+function perm(x){return m289((x*34+1)*x);}
+var G3=new Float64Array(12);
+function lane(pv,k){
+  var j=pv-49*Math.floor(pv*0.14285714285714285*0.14285714285714285);
+  var xq=Math.floor(j*0.14285714285714285), yq=Math.floor(j-7*xq);
+  var x=xq*0.2857142857142857-0.9285714285714286, y=yq*0.2857142857142857-0.9285714285714286;
+  var h=1-Math.abs(x)-Math.abs(y);
+  var sh=(0>=h)?-1:0;
+  G3[k*3]=x+(Math.floor(x)*2+1)*sh; G3[k*3+1]=y+(Math.floor(y)*2+1)*sh; G3[k*3+2]=h;
+}
+function snoise(vx,vy,vz){
+  var s=(vx+vy+vz)/3;
+  var ix=Math.floor(vx+s),iy=Math.floor(vy+s),iz=Math.floor(vz+s);
+  var t=(ix+iy+iz)/6;
+  var x0=vx-ix+t,y0=vy-iy+t,z0=vz-iz+t;
+  var gx=x0>=y0?1:0,gy=y0>=z0?1:0,gz=z0>=x0?1:0;
+  var lx=1-gx,ly=1-gy,lz=1-gz;
+  var i1x=Math.min(gx,lz),i1y=Math.min(gy,lx),i1z=Math.min(gz,ly);
+  var i2x=Math.max(gx,lz),i2y=Math.max(gy,lx),i2z=Math.max(gz,ly);
+  var x1=x0-i1x+1/6,y1=y0-i1y+1/6,z1=z0-i1z+1/6;
+  var x2=x0-i2x+1/3,y2=y0-i2y+1/3,z2=z0-i2z+1/3;
+  var x3=x0-0.5,y3=y0-0.5,z3=z0-0.5;
+  ix=m289(ix);iy=m289(iy);iz=m289(iz);
+  var p0=perm(perm(perm(iz)+iy)+ix);
+  var p1=perm(perm(perm(iz+i1z)+iy+i1y)+ix+i1x);
+  var p2=perm(perm(perm(iz+i2z)+iy+i2y)+ix+i2x);
+  var p3=perm(perm(perm(iz+1)+iy+1)+ix+1);
+  lane(p0,0);lane(p1,1);lane(p2,2);lane(p3,3);
+  var a0=G3[0],b0=G3[1],c0=G3[2],a1=G3[3],b1=G3[4],c1=G3[5],a2=G3[6],b2=G3[7],c2=G3[8],a3=G3[9],b3=G3[10],c3=G3[11];
+  var n0=1.79284291400159-0.85373472095314*(a0*a0+b0*b0+c0*c0);
+  var n1=1.79284291400159-0.85373472095314*(a1*a1+b1*b1+c1*c1);
+  var n2=1.79284291400159-0.85373472095314*(a2*a2+b2*b2+c2*c2);
+  var n3=1.79284291400159-0.85373472095314*(a3*a3+b3*b3+c3*c3);
+  var m0=Math.max(0.6-(x0*x0+y0*y0+z0*z0),0), m1=Math.max(0.6-(x1*x1+y1*y1+z1*z1),0), m2=Math.max(0.6-(x2*x2+y2*y2+z2*z2),0), m3=Math.max(0.6-(x3*x3+y3*y3+z3*z3),0);
+  m0*=m0;m1*=m1;m2*=m2;m3*=m3;
+  return 42*(m0*m0*n0*(a0*x0+b0*y0+c0*z0)+m1*m1*n1*(a1*x1+b1*y1+c1*z1)+m2*m2*n2*(a2*x2+b2*y2+c2*z2)+m3*m3*n3*(a3*x3+b3*y3+c3*z3));
+}
+function fbm5(x,y,z){var a=0.5,s=0;for(var i=0;i<5;i++){s+=a*snoise(x,y,z);x=x*2.03+1.7;y=y*2.03+9.2;z=z*2.03+3.1;a*=0.5;}return s;}
+
+/* macro terrain height, identical to macroH() in GLSL. T={s:[x,y,z],t0,t1,t2} */
+function terrainH(px,py,pz,T){
+  var s=T.s,t0=T.t0,t1=T.t1,t2=T.t2;
+  var c=fbm5(px*t0[0]+s[0],py*t0[0]+s[1],pz*t0[0]+s[2]);
+  var h=(c-t0[1])*t0[2];
+  var r=1-Math.abs(snoise(px*t1[0]+s[1]*1.37,py*t1[0]+s[2]*1.37,pz*t1[0]+s[0]*1.37));
+  r=Math.pow(Math.max(r,0),t1[1]);
+  h+=r*smoothstep(t1[2],t1[3],h)*t0[3];
+  h+=t2[2]*snoise(px*t2[3]+s[2],py*t2[3]+s[0],pz*t2[3]+s[1]);
+  if(t2[0]>0){
+    var u=h*t2[1], fl=Math.floor(u);
+    var st=(fl+smoothstep(0.3,0.7,u-fl))/t2[1];
+    h=h+(st-h)*(t2[0]*smoothstep(0.05,0.3,h));
+  }
+  return h;
+}
+function dispOf(h,amp){return (h>0?0.04*Math.pow(h,1.3):0.03*h)*amp;}
+function moistureAt(px,py,pz,h,T,bias){
+  var s=T.s;
+  var m=0.5+0.5*snoise(px*2.1+11+s[1],py*2.1+3+s[2],pz*2.1+7+s[0]);
+  return m+(1-Math.abs(py))*0.28-0.12+bias-Math.max(h,0)*0.22;
+}
+
+/* indexed icosphere, N subdivisions per edge (N=64 -> 40,962 vertices, 81,920 triangles) */
+function buildSphere(N){
+  var t=(1+Math.sqrt(5))/2;
+  var V=[[-1,t,0],[1,t,0],[-1,-t,0],[1,-t,0],[0,-1,t],[0,1,t],[0,-1,-t],[0,1,-t],[t,0,-1],[t,0,1],[-t,0,-1],[-t,0,1]];
+  var F=[[0,11,5],[0,5,1],[0,1,7],[0,7,10],[0,10,11],[1,5,9],[5,11,4],[11,10,2],[10,7,6],[7,1,8],[3,9,4],[3,4,2],[3,2,6],[3,6,8],[3,8,9],[4,9,5],[2,4,11],[6,2,10],[8,6,7],[9,8,1]];
+  var map=new Map(), pos=[], idx=[];
+  function vid(x,y,z){var l=Math.sqrt(x*x+y*y+z*z);x/=l;y/=l;z/=l;var k=Math.round(x*20000)+','+Math.round(y*20000)+','+Math.round(z*20000);var v=map.get(k);if(v===undefined){v=pos.length/3;map.set(k,v);pos.push(x,y,z);}return v;}
+  for(var f=0;f<20;f++){
+    var a=V[F[f][0]],b=V[F[f][1]],c=V[F[f][2]],g=[];
+    for(var i=0;i<=N;i++){g[i]=[];for(var j=0;j<=N-i;j++){var k=N-i-j;g[i][j]=vid((a[0]*k+b[0]*i+c[0]*j)/N,(a[1]*k+b[1]*i+c[1]*j)/N,(a[2]*k+b[2]*i+c[2]*j)/N);}}
+    for(var i2=0;i2<N;i2++)for(var j2=0;j2<N-i2;j2++){
+      idx.push(g[i2][j2],g[i2+1][j2],g[i2][j2+1]);
+      if(j2<N-i2-1)idx.push(g[i2+1][j2],g[i2+1][j2+1],g[i2][j2+1]);
+    }
+  }
+  return {n:pos.length/3,dirs:new Float32Array(pos),idx:new Uint16Array(idx)};
+}
+/* displaced positions + heights for vertices [a,b) */
+function terrainRange(P,sph,pos,hArr,a,b){
+  var d=sph.dirs,amp=P.st.amp;
+  for(var i=a;i<b;i++){
+    var x=d[i*3],y=d[i*3+1],z=d[i*3+2];
+    var h=terrainH(x,y,z,P.T), r=1+dispOf(h,amp);
+    pos[i*3]=x*r;pos[i*3+1]=y*r;pos[i*3+2]=z*r;hArr[i]=h;
+  }
+}
+function computeNormals(pos,idx){
+  var n=new Float32Array(pos.length);
+  for(var i=0;i<idx.length;i+=3){
+    var a=idx[i]*3,b=idx[i+1]*3,c=idx[i+2]*3;
+    var ux=pos[b]-pos[a],uy=pos[b+1]-pos[a+1],uz=pos[b+2]-pos[a+2];
+    var vx=pos[c]-pos[a],vy=pos[c+1]-pos[a+1],vz=pos[c+2]-pos[a+2];
+    var nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;
+    n[a]+=nx;n[a+1]+=ny;n[a+2]+=nz;n[b]+=nx;n[b+1]+=ny;n[b+2]+=nz;n[c]+=nx;n[c+1]+=ny;n[c+2]+=nz;
+  }
+  for(var j=0;j<n.length;j+=3){var l=Math.sqrt(n[j]*n[j]+n[j+1]*n[j+1]+n[j+2]*n[j+2])||1;n[j]/=l;n[j+1]/=l;n[j+2]/=l;}
+  return n;
+}
+
+/* ---------------- stars (real spectral classes, blackbody-derived colours) ---------------- */
+var STAR_CLASSES=[
+ {c:'O',t:[30000,45000],col:[0.61,0.69,1.00],inten:1.50,size:15},
+ {c:'B',t:[10000,28000],col:[0.67,0.75,1.00],inten:1.40,size:12},
+ {c:'A',t:[7500,9800], col:[0.79,0.84,1.00],inten:1.25,size:10},
+ {c:'F',t:[6000,7400], col:[0.97,0.97,1.00],inten:1.20,size:8.5},
+ {c:'G',t:[5300,5900], col:[1.00,0.96,0.92],inten:1.15,size:7.5},
+ {c:'K',t:[3900,5200], col:[1.00,0.82,0.63],inten:1.10,size:6.5},
+ {c:'M',t:[2400,3800], col:[1.00,0.80,0.44],inten:1.05,size:5}
+];
+function pickWeighted(w,rng){var s=0,i;for(i=0;i<w.length;i++)s+=w[i];var r=rng()*s;for(i=0;i<w.length;i++){r-=w[i];if(r<=0)return i;}return w.length-1;}
+function makeStar(weights,rng){
+  var cl=STAR_CLASSES[pickWeighted(weights,rng)], d=Math.floor(rng()*10);
+  var temp=Math.round((cl.t[1]-(cl.t[1]-cl.t[0])*(d/10))/50)*50;
+  return {cls:cl.c,sub:d,label:cl.c+d+'V',temp:temp,col:cl.col,inten:cl.inten,size:cl.size*(0.9+rng()*0.25)};
+}
+var MOON_PAL=[[[0.62,0.60,0.58],[0.34,0.33,0.32],'GREY'],[[0.76,0.60,0.38],[0.45,0.33,0.2],'OCHRE'],[[0.90,0.95,1.0],[0.60,0.75,0.90],'ICE'],[[0.70,0.38,0.25],[0.38,0.20,0.15],'RUST'],[[0.95,0.88,0.40],[0.70,0.45,0.20],'SULFUR'],[[0.22,0.22,0.24],[0.08,0.08,0.10],'CARBON'],[[0.55,0.75,0.70],[0.25,0.40,0.45],'TEAL']];
+var ROMAN=['I','II','III','IV','V','VI'];
+/* a whole system: 1-2 suns, 0-6 moons, a small chance of an asteroid belt; drawn from its own seeded stream */
+function makeSystem(st,seed){
+  var rng=mulberry32((seed^0x5A17C0DE)>>>0);
+  var suns=[], dir0=norm3([-0.72+(rng()-0.5)*0.4,0.3+(rng()-0.5)*0.3,0.62+(rng()-0.5)*0.3]);
+  var s0=makeStar(st.starW,rng); s0.dir=dir0; s0.rel=1; suns.push(s0);
+  if(rng()<0.3){
+    var s1=makeStar([0,0,0.02,0.1,0.2,0.33,0.35],rng);
+    var ang=(50+rng()*80)*DEG*(rng()<0.5?-1:1), ca=Math.cos(ang), sa=Math.sin(ang);
+    var d1=norm3([dir0[0]*ca+dir0[2]*sa,dir0[1]+(rng()-0.5)*0.7,-dir0[0]*sa+dir0[2]*ca]);
+    s1.dir=d1; s1.rel=0.45+rng()*0.35; suns.push(s1);
+  }
+  var nm=Math.floor(rng()*7), moons=[];
+  for(var i=0;i<nm;i++){
+    var pal=MOON_PAL[Math.floor(rng()*MOON_PAL.length)];
+    moons.push({frac:(i+0.25+rng()*0.5)/nm,rad:0.05+rng()*0.14,inc:(rng()-0.5)*0.9,node:rng()*TAU,phase:rng()*TAU,speed:0.7+rng()*0.7,c1:pal[0],c2:pal[1],kind:pal[2],seed:[rng()*50,rng()*50,rng()*50],name:ROMAN[i]});
+  }
+  var belt=rng()<0.25?{inc:(rng()-0.5)*0.4,node:rng()*TAU,tint:rng()}:null;
+  var ringRoll=rng(),r1=rng(),r2=rng(),r3=rng(),r4=rng(),r5=rng(),ring=null;
+  if(ringRoll<st.ringP){
+    var sc=st.scale,Dd=2.2+1.5*sc,inner=sc*(1.30+r1*0.12),outer=Math.min(inner+sc*(0.45+r2*0.7),0.6*Dd);
+    outer=Math.max(outer,inner+0.22*sc);
+    ring={inc:(r3-0.5)*0.8,node:r4*TAU,inner:inner,outer:outer,c1:st.ringC[0],c2:st.ringC[1],seed:[r5*50,r1*50,r2*50]};
+  }
+  return {suns:suns,moons:moons,belt:belt,ring:ring};
+}
+function norm3(v){var l=Math.sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2])||1;return [v[0]/l,v[1]/l,v[2]/l];}
+
+/* ---------------- planet styles ---------------- */
+var STYLES=[
+ {id:'verdance',name:'VERDANCE',kind:'TEMPERATE OCEAN WORLD',scale:1.0,spin:0.035,seed:0x4E48A1C2,salt:0x1111,amp:1.0,
+  t0:[1.15,0.03,2.1,0.65],t1:[2.7,3,0.2,0.7],t2:[0,6,0,22],
+  liqS:[0.20,0.86,0.82],liqM:[0.06,0.38,0.82],liqD:[0.02,0.14,0.52],liq:[1.5,1.0,0.010,0.55],liqEmis:[0,0,0,0],crust:0,
+  sand:[0.86,0.78,0.52],dry:[0.74,0.60,0.30],mid:[0.45,0.64,0.20],wetA:[0.06,0.27,0.08],wetB:[0.34,0.62,0.17],rockA:[0.29,0.31,0.36],rockB:[0.46,0.47,0.50],high:[0.97,0.98,1.0],
+  land:[0,1,70,0],land2:[0.95,0.84,0.42,0],crackCol:[0,0,0],glow:[0,0,10,0],amb:[0.06,0.09,0.16],rim:[0.15,0.45,0.85],
+  cloudA:[0.97,0.98,1.0],cloudB:[0.97,0.98,1.0],cloudP:[0.07,0.47,0.88,0.25],cloudS:[2.0,0.006,0.28,0],
+  atmA:[0.1,0.55,0.95],atmB:[0.35,0.95,0.95],atmP:[0.65,0.42],nebA:[0.02,0.07,0.10],nebB:[0.07,0.03,0.09],nebAmt:1.0,
+  starW:[0,0.03,0.07,0.2,0.4,0.25,0.05],dens:1.2,bias:[0,0,0,0],hazBias:0,
+  arch:['plains','canyon','basin','peak'],
+  atmo:[['N',77.8,'#2de2d0'],['O',20.6,'#58ff8f'],['Ar',0.9,'#6aa0ff'],['CO',0.1,'#ff9a2e'],['TRACE',0.6,'#6fa5a3']],
+  lex:['Aethelgard','Hadis','Saba','Caldera','Orinoco','Valdris','Thessaly','Marenne','Ildar','Corvane','Elowen','Brightmere'],
+  suffix:{plains:['Plains','Steppe','Meadows'],canyon:['Canyon','Gorge'],basin:['Basin','Lakebed'],peak:['Reach','Summit'],coast:['Landing','Cove'],plateau:['Plateau','Mesa'],polar:['Pole','Cap']},
+  vocab:{ground:'grassland',water:'subterranean aquifers',energy:'Solar',rock:'sedimentary rock',wind:'moderately high winds',liquid:'ocean'},
+  biomes:{coast:'COASTAL BEACH',peak:'ALPINE SNOW',high:'HIGHLAND ROCK',wet:'DENSE FOREST',mid:'GRASSLAND',dry:'ARID SCRUB',polar:'POLAR ICE'}},
+ {id:'cinder',name:'CINDER',kind:'VOLCANIC LAVA WORLD',scale:0.62,spin:0.06,seed:0x0C1DE2A9,salt:0x2222,amp:0.95,
+  t0:[1.6,0.10,2.2,1.0],t1:[3.4,2,0.15,0.6],t2:[0,6,0.03,18],
+  liqS:[1.0,0.62,0.12],liqM:[0.95,0.28,0.03],liqD:[0.45,0.05,0.01],liq:[1.2,0.25,0.004,0],liqEmis:[1.0,0.38,0.06,1.15],crust:0.75,
+  sand:[0.30,0.24,0.21],dry:[0.15,0.12,0.11],mid:[0.24,0.17,0.14],wetA:[0.10,0.07,0.07],wetB:[0.20,0.12,0.10],rockA:[0.18,0.16,0.16],rockB:[0.34,0.30,0.29],high:[0.62,0.58,0.55],
+  land:[0,0,70,0.05],land2:[0.55,2.0,0.3,0],crackCol:[1.0,0.34,0.05],glow:[1,0.9,20,0],amb:[0.07,0.03,0.03],rim:[1.0,0.35,0.1],
+  cloudA:[0.28,0.24,0.24],cloudB:[1.0,0.4,0.1],cloudP:[0.15,0.6,0.8,0.5],cloudS:[2.4,0.012,0.35,0.5],
+  atmA:[1.0,0.3,0.08],atmB:[1.0,0.6,0.15],atmP:[0.7,0.5],nebA:[0.10,0.02,0.01],nebB:[0.08,0.03,0.05],nebAmt:0.8,
+  starW:[0.01,0.02,0.04,0.1,0.2,0.35,0.28],dens:3.8,bias:[15,-40,25,-50],hazBias:2,
+  arch:['coast','peak','plains','basin','plateau'],
+  atmo:[['CO',61.0,'#ff9a2e'],['SO2',18.0,'#ffd34a'],['N',14.0,'#2de2d0'],['HS',3.5,'#ff5a3c'],['Ar',1.2,'#6aa0ff'],['TRACE',2.3,'#6fa5a3']],
+  lex:['Ashgrave','Vulkan','Embermaw','Pyra','Kaldr','Surtr','Scoria','Tephra','Hellmark','Obsidia','Nyx','Cindral'],
+  suffix:{plains:['Flats','Ashfields','Basalt Flats'],canyon:['Rift','Fissure'],basin:['Crater Basin','Ash Basin'],peak:['Caldera','Cone'],coast:['Magma Coast','Shore'],plateau:['Terrace','Plateau'],polar:['Cap']},
+  vocab:{ground:'basalt',water:'sulfur-laced condensate',energy:'Geothermal',rock:'volcanic rock',wind:'ash storms',liquid:'magma sea'},
+  biomes:{coast:'LAVA SHORE',peak:'ASH PEAK',high:'BASALT UPLAND',wet:'OBSIDIAN FIELD',mid:'CRACKED CRUST',dry:'ASH PLAIN',polar:'ASH CAP'}},
+ {id:'miasma',name:'MIASMA',kind:'TOXIC NEBULOUS WORLD',scale:1.5,spin:0.02,seed:0x7B0A5E13,salt:0x3333,amp:0.8,
+  t0:[1.5,0.02,1.8,0.4],t1:[2.2,2,0.3,0.8],t2:[0,6,0.025,14],
+  liqS:[0.72,0.95,0.22],liqM:[0.28,0.72,0.16],liqD:[0.05,0.26,0.20],liq:[1.4,1.0,0.02,0.4],liqEmis:[0.4,1.0,0.3,0.22],crust:0,
+  sand:[0.80,0.82,0.45],dry:[0.35,0.55,0.35],mid:[0.55,0.35,0.60],wetA:[0.14,0.09,0.30],wetB:[0.58,0.28,0.78],rockA:[0.26,0.20,0.32],rockB:[0.42,0.32,0.48],high:[0.95,0.90,0.50],
+  land:[0.25,1,45,0],land2:[0.8,2.0,0.4,0],crackCol:[0.35,1.0,0.75],glow:[2,1.2,38,0],amb:[0.07,0.08,0.10],rim:[0.55,1.0,0.4],
+  cloudA:[0.75,1.0,0.55],cloudB:[0.75,0.3,0.95],cloudP:[0.02,0.5,0.6,0.7],cloudS:[1.6,0.008,0.5,0.35],
+  atmA:[0.5,1.0,0.4],atmB:[0.7,0.3,1.0],atmP:[0.8,0.6],nebA:[0.05,0.14,0.06],nebB:[0.14,0.04,0.18],nebAmt:2.0,
+  starW:[0.02,0.08,0.2,0.3,0.2,0.1,0.1],dens:5.5,bias:[-10,10,0,25],hazBias:1,
+  arch:['plains','coast','peak'],
+  atmo:[['N',52.0,'#2de2d0'],['CH4',18.0,'#ff9a2e'],['NH3',11.0,'#9be8ff'],['HS',9.0,'#ff5a3c'],['CO',6.0,'#ffd34a'],['TRACE',4.0,'#6fa5a3']],
+  lex:['Vireth','Mirewood','Sporefall','Noxa','Chlora','Miasmir','Veyl','Opaline','Toxar','Lurid','Fenwick','Ooze'],
+  suffix:{plains:['Spore Plains','Mire','Fen'],canyon:['Chasm','Cleft'],basin:['Sink','Basin'],peak:['Spire','Pinnacle'],coast:['Shore','Strand'],plateau:['Shelf','Mesa'],polar:['Rim']},
+  vocab:{ground:'fungal mat',water:'toxic fluids',energy:'Chemical-gradient',rock:'mineral crust',wind:'spore-laden gusts',liquid:'acid sea'},
+  biomes:{coast:'ACID SHORE',peak:'SULFUR CRUST',high:'FUNGAL BLUFF',wet:'SPORE CANOPY',mid:'VIOLET MOSS',dry:'GREEN SCRUB',polar:'SULFUR CAP'}},
+ {id:'glacia',name:'GLACIA',kind:'FROZEN ICE WORLD',scale:0.82,spin:0.04,seed:0x1CE5F00D,salt:0x4444,amp:0.9,
+  t0:[1.0,0.12,1.7,0.55],t1:[2.4,2,0.25,0.8],t2:[0,6,0.02,20],
+  liqS:[0.78,0.93,1.0],liqM:[0.48,0.76,0.95],liqD:[0.17,0.42,0.76],liq:[1.4,0.8,0.003,0.3],liqEmis:[0,0,0,0],crust:0,
+  sand:[0.90,0.95,1.0],dry:[0.80,0.88,0.95],mid:[0.90,0.95,1.0],wetA:[0.66,0.82,0.95],wetB:[0.86,0.95,1.0],rockA:[0.33,0.38,0.48],rockB:[0.50,0.55,0.63],high:[1,1,1],
+  land:[0.2,0,70,0.14],land2:[0.35,0.5,0.45,0],crackCol:[0.4,0.8,1.0],glow:[1,0.35,14,0],amb:[0.08,0.11,0.20],rim:[0.5,0.8,1.0],
+  cloudA:[0.95,0.98,1.0],cloudB:[0.7,0.9,1.0],cloudP:[0.25,0.65,0.45,0.3],cloudS:[2.6,0.004,0.3,0],
+  atmA:[0.4,0.8,1.0],atmB:[0.7,1.0,1.0],atmP:[0.55,0.45],nebA:[0.02,0.06,0.10],nebB:[0.03,0.08,0.12],nebAmt:1.0,
+  starW:[0,0.02,0.1,0.25,0.15,0.2,0.28],dens:0.9,bias:[-5,30,-25,-45],hazBias:1,
+  arch:['polar','canyon','coast','peak'],
+  atmo:[['N',91.0,'#2de2d0'],['Ar',5.2,'#6aa0ff'],['CO',1.6,'#ff9a2e'],['CH4',1.2,'#9be8ff'],['O',0.6,'#58ff8f'],['TRACE',0.4,'#6fa5a3']],
+  lex:['Borealis','Hailstone','Kryos','Frostmere','Nival','Skadi','Tundrel','Ymir','Glacern','Rimeheart','Vesper','Hoarfell'],
+  suffix:{plains:['Shelf','Ice Plain','Snowfield'],canyon:['Crevasse','Ice Canyon'],basin:['Basin','Hollow'],peak:['Nunatak','Horn'],coast:['Harbor','Fjord'],plateau:['Plateau','Tableland'],polar:['Pole','Cap']},
+  vocab:{ground:'glacial ice',water:'frozen reserves',energy:'Geothermal vent',rock:'exposed bedrock',wind:'katabatic gales',liquid:'frozen sea'},
+  biomes:{coast:'ICE SHELF',peak:'GLACIAL PEAK',high:'BARE ROCK AND ICE',wet:'BLUE ICE',mid:'FIRN FIELD',dry:'SNOWFIELD',polar:'POLAR ICE CAP'}},
+ {id:'dune',name:'DUNE',kind:'ARID DESERT WORLD',scale:0.55,spin:0.05,seed:0xD0E5A117,salt:0x5555,amp:1.1,
+  t0:[1.3,-0.15,2.4,-0.5],t1:[4.2,4,0.0,0.6],t2:[0.75,6,0.02,26],
+  liqS:[0.60,0.40,0.26],liqM:[0.50,0.30,0.20],liqD:[0.34,0.19,0.14],liq:[1.5,0.0,0,0],liqEmis:[0,0,0,0],crust:0,
+  sand:[0.88,0.64,0.40],dry:[0.80,0.46,0.26],mid:[0.70,0.38,0.20],wetA:[0.52,0.26,0.16],wetB:[0.68,0.40,0.25],rockA:[0.40,0.25,0.20],rockB:[0.56,0.37,0.29],high:[0.93,0.88,0.84],
+  land:[-1,0,70,0.18],land2:[1.2,0.9,0.5,0],crackCol:[0,0,0],glow:[0,0,10,0],amb:[0.09,0.06,0.05],rim:[1.0,0.65,0.4],
+  cloudA:[0.95,0.78,0.6],cloudB:[0.9,0.6,0.4],cloudP:[0.3,0.7,0.45,0.4],cloudS:[3.0,0.02,0.3,0],
+  atmA:[1.0,0.65,0.35],atmB:[1.0,0.8,0.5],atmP:[0.5,0.3],nebA:[0.04,0.03,0.02],nebB:[0.05,0.03,0.05],nebAmt:0.6,
+  starW:[0,0,0.03,0.12,0.3,0.35,0.2],dens:0.02,bias:[20,-45,15,-55],hazBias:0,
+  arch:['plateau','canyon','basin','plains','peak'],
+  atmo:[['CO',88.0,'#ff9a2e'],['N',6.0,'#2de2d0'],['Ar',3.2,'#6aa0ff'],['O',0.4,'#58ff8f'],['TRACE',2.4,'#6fa5a3']],
+  lex:['Tharsis','Ares','Syrtis','Meridian','Amazon','Cydonia','Hellene','Zephyr','Arabia','Sahar','Khem','Duneth'],
+  suffix:{plains:['Flats','Salt Flats','Regolith Plain'],canyon:['Valles','Canyon'],basin:['Basin','Dry Sea'],peak:['Mons','Rise'],coast:['Shoreline','Scarp'],plateau:['Mesa','Tableland'],polar:['Cap']},
+  vocab:{ground:'red regolith',water:'subsurface ice',energy:'Solar',rock:'iron-rich rock',wind:'dust storms',liquid:'dry sea floor'},
+  biomes:{coast:'DRY SHORELINE',peak:'DUST PEAK',high:'MESA ROCK',wet:'IRON-RICH BED',mid:'RED REGOLITH',dry:'DUNE FIELD',polar:'FROST CAP'}}
+];
+for(var _i=0;_i<STYLES.length;_i++){STYLES[_i].km=Math.round(12742*STYLES[_i].scale/10)*10;}
+/* extra world features per style: [lakeThreshold (>=2 = none), riverWidth (0 = none), riverScale, -], aurora colour + strength, lightning colour + rate, storm count range, ring chance + palette */
+var FEAT=[[0.42,0.014,3.2,0],[0.5,0.022,3.8,0],[0.4,0.016,3.0,0],[0.55,0.012,3.0,0],[9,0.010,3.6,0]];
+var AUR=[[0.2,1.0,0.5,1.1],[1.0,0.3,0.1,0.8],[0.8,0.3,1.0,1.4],[0.3,0.9,1.0,1.3],[0.4,1.0,0.8,0.35]];
+var FLASH=[[0.8,0.9,1.0,0.7],[1.0,0.55,0.2,1.1],[0.6,1.0,0.5,1.0],[0,0,0,0],[0,0,0,0]];
+var STORMN=[[1,3],[2,3],[2,3],[1,2],[1,2]];
+var RINGP=[0.12,0.1,0.5,0.5,0.15];
+var RINGC=[[[0.85,0.8,0.7],[0.55,0.5,0.45]],[[0.35,0.3,0.28],[0.7,0.45,0.3]],[[0.7,0.9,0.5],[0.6,0.4,0.8]],[[0.9,0.95,1.0],[0.6,0.75,0.9]],[[0.8,0.65,0.5],[0.5,0.4,0.35]]];
+for(var _j=0;_j<STYLES.length;_j++){var S_=STYLES[_j];S_.feat=FEAT[_j];S_.aur=AUR[_j];S_.flash=FLASH[_j];S_.stormN=STORMN[_j];S_.ringP=RINGP[_j];S_.ringC=RINGC[_j];}
+
+/* uniform values for a style + seed */
+function styleUniforms(st,sv){
+  return {uSeed:sv,uT0:st.t0.concat([0]).slice(0,4),uT1:st.t1,uT2:st.t2,uAmp:st.amp,
+    uLiqS:st.liqS,uLiqM:st.liqM,uLiqD:st.liqD,uLiq:st.liq,uLiqEmis:st.liqEmis,uCrust:st.crust,
+    uSand:st.sand,uDry:st.dry,uMid:st.mid,uWetA:st.wetA,uWetB:st.wetB,uRockA:st.rockA,uRockB:st.rockB,uHigh:st.high,uLand:st.land,uLand2:st.land2,
+    uCrackCol:st.crackCol,uGlow:st.glow,uAmbCol:st.amb,uRimCol:st.rim,uFeat:st.feat,uAur:st.aur,uFlashCol:st.flash.slice(0,3),
+    uCloudA:st.cloudA,uCloudB:st.cloudB,uCloudP:st.cloudP,uCloudS:st.cloudS,
+    uAtmA:st.atmA,uAtmB:st.atmB,uAtmP:st.atmP.concat([0,0]),uNebA:st.nebA,uNebB:st.nebB,uNebAmt:st.nebAmt};
+}
+
+/* ---------------- landing-site archetypes ---------------- */
+var ARCH={
+ plains:{tag:'PRIMARY SETTLEMENT',pri:'HIGH PRIORITY',pcol:'g',haz:2,res:[40,70,75,70],
+   notes:['Flat {ground} with high build stability','{energy} exposure suited to primary power','Reachable {water} near the surface'],risk:'RISK · Exposure to {wind}'},
+ canyon:{tag:'MINING OUTPOST',pri:'MINING SITE',pcol:'o',haz:3,res:[90,35,60,20],
+   notes:['Gorge system cutting through {rock}','Rich ore seams exposed along the walls','Walls shelter the floor from surface radiation'],risk:'RISK · Confined airspace, rough terrain'},
+ basin:{tag:'BIO-CULTIVATION',pri:'AGRI SITE',pcol:'g',haz:3,res:[30,90,45,85],
+   notes:['Ancient depression collecting {water}','Nutrient-rich sediment fill','Stable, sheltered microclimate'],risk:'RISK · Periodic flooding, poor drainage'},
+ peak:{tag:'HIGH RISK / HIGH REWARD',pri:'HIGH RISK',pcol:'r',haz:4,res:[85,15,90,10],
+   notes:['Elevated summit above the weather','Exposed mineral veins and clear sky lines','Continuous {energy} potential'],risk:'RISK · Severe turbulence, sheer faces'},
+ coast:{tag:'HARBOR AND LOGISTICS',pri:'LOGISTICS HUB',pcol:'t',haz:2,res:[40,75,55,60],
+   notes:['Sheltered shoreline on the {liquid}','Flat approach for landing craft','Mixed terrain for rapid expansion'],risk:'RISK · Tidal surge and corrosive spray'},
+ plateau:{tag:'FORWARD BASE',pri:'FORWARD BASE',pcol:'g',haz:2,res:[65,40,70,30],
+   notes:['Elevated {ground} plateau','Broad stable landing pad','Commanding view of the surrounding terrain'],risk:'RISK · Strong winds, little natural cover'},
+ polar:{tag:'CRYO RESEARCH',pri:'RESEARCH',pcol:'t',haz:3,res:[35,85,30,25],
+   notes:['Permanent polar cap with deep ice record','Core-sample access to planetary history','Low thermal background for instruments'],risk:'RISK · Extreme cold, whiteout visibility'}
+};
+var HAZ=[null,{l:'LOW',c:'#58ff8f'},{l:'MODERATE',c:'#58ff8f'},{l:'ELEVATED',c:'#ff9a2e'},{l:'HIGH',c:'#ff5a3c'},{l:'SEVERE',c:'#ff5a3c'}];
+function fill(s,v){return s.replace(/\{(\w+)\}/g,function(_,k){return v[k]||'';});}
+function cap1(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+
+function biomeOf(st,f,T){
+  if(f.lat>st.land2[1])return st.biomes.polar;
+  if(f.h<0.045)return st.biomes.coast;
+  if(f.h>0.7)return st.biomes.peak;
+  if(f.h>0.42)return st.biomes.high;
+  var m=moistureAt(f.x,f.y,f.z,f.h,T,st.land[0]);
+  return m>0.6?st.biomes.wet:m>0.38?st.biomes.mid:st.biomes.dry;
+}
+
+/* sample candidate points, measure the terrain around them, then give each archetype the best-fitting spot */
+function pickSites(st,T,rng,useFirstNames){
+  var N=2200,cands=[],off=rng()*TAU,e=0.03,rs=0.06,rb=0.14;
+  function H(x,y,z){var l=Math.sqrt(x*x+y*y+z*z);return terrainH(x/l,y/l,z/l,T);}
+  for(var i=0;i<N;i++){
+    var y=1-2*(i+0.5)/N, r=Math.sqrt(1-y*y), ph=i*2.399963+off+rng()*0.35;
+    var x=r*Math.cos(ph), z=r*Math.sin(ph), h=terrainH(x,y,z,T);
+    if(h<0.015)continue;
+    var up=Math.abs(y)<0.99?[0,1,0]:[1,0,0];
+    var t1=norm3([y*up[2]-z*up[1],z*up[0]-x*up[2],x*up[1]-y*up[0]]);
+    var t2=[y*t1[2]-z*t1[1],z*t1[0]-x*t1[2],x*t1[1]-y*t1[0]];
+    var gA=H(x+t1[0]*e,y+t1[1]*e,z+t1[2]*e)-H(x-t1[0]*e,y-t1[1]*e,z-t1[2]*e);
+    var gB=H(x+t2[0]*e,y+t2[1]*e,z+t2[2]*e)-H(x-t2[0]*e,y-t2[1]*e,z-t2[2]*e);
+    var g=Math.sqrt(gA*gA+gB*gB)/(2*e);
+    var mx=-9,mn=9,sum=0,k,hh;
+    var dirs=[t1,t2,[-t1[0],-t1[1],-t1[2]],[-t2[0],-t2[1],-t2[2]]];
+    for(k=0;k<4;k++){hh=H(x+dirs[k][0]*rs,y+dirs[k][1]*rs,z+dirs[k][2]*rs);if(hh>mx)mx=hh;if(hh<mn)mn=hh;}
+    for(k=0;k<4;k++){sum+=H(x+dirs[k][0]*rb,y+dirs[k][1]*rb,z+dirs[k][2]*rb);}
+    cands.push({x:x,y:y,z:z,h:h,g:g,lat:Math.abs(y),maxS:mx-h,minS:mn,rel:sum/4-h});
+  }
+  var score={
+    plains:function(f){return (f.h>0.02&&f.h<0.45?0:-9)+1-f.g*0.8-Math.abs(f.h-0.18)*1.2+Math.min(f.rel,0)*2;},
+    canyon:function(f){return (f.h>0.08?0:-9)+f.maxS*5+f.g*0.15;},
+    basin:function(f){return (f.h<0.3?0:-9)+f.rel*5-Math.abs(f.h-0.06);},
+    peak:function(f){return (f.h>0.35?0:-9)+f.h*3-f.rel*3;},
+    coast:function(f){return (f.h<0.1&&f.minS<-0.02?2:-4)-f.h*10-f.g*0.3-f.minS*0.5;},
+    plateau:function(f){return (f.h>0.22&&f.h<0.9?0:-9)+1.2-f.g*1.0-Math.abs(f.h-0.4)*1.5;},
+    polar:function(f){return (f.lat>0.7?0:-9)+f.lat*3-f.g*0.3;}
+  };
+  var sites=[],usedPre={},arches=st.arch;
+  for(var a=0;a<arches.length;a++){
+    var key=arches[a],best=null,bs=-1e9;
+    for(var sepI=0;sepI<3&&!best;sepI++){
+      var sep=[0.85,0.6,0.35][sepI];
+      for(var c=0;c<cands.length;c++){
+        var f=cands[c],ok=true;
+        for(var s=0;s<sites.length;s++){var dx=f.x-sites[s].dir[0],dy=f.y-sites[s].dir[1],dz=f.z-sites[s].dir[2];if(dx*dx+dy*dy+dz*dz<sep*sep){ok=false;break;}}
+        if(!ok)continue;
+        var sc=score[key](f)+rng()*0.12;
+        if(sc>bs){bs=sc;best=f;}
+      }
+    }
+    if(!best)continue;
+    sites.push(makeSite(st,T,rng,key,best,sites.length,usedPre,useFirstNames&&a<4));
+  }
+  return sites;
+}
+function makeSite(st,T,rng,key,f,i,usedPre,firstNames){
+  var A=ARCH[key],suf=st.suffix[key],pre;
+  if(firstNames){pre=st.lex[i%4];}
+  else{do{pre=st.lex[Math.floor(rng()*st.lex.length)];}while(usedPre[pre]);}
+  usedPre[pre]=1;
+  var name=pre+' '+suf[firstNames?0:Math.floor(rng()*suf.length)];
+  var lat=Math.asin(f.y)/DEG, lon=Math.atan2(f.x,f.z)/DEG;
+  var hz=clamp(Math.round(A.haz+st.hazBias+(f.g>2.2?1:0)+(rng()<0.25?(rng()<0.5?-1:1):0)),1,5);
+  var rows=[0,1,2,3].map(function(k){return clamp(Math.round(A.res[k]+st.bias[k]+(rng()-0.5)*18),4,99);});
+  var mx=Math.max.apply(null,rows),avg=(rows[0]+rows[1]+rows[2]+rows[3])/4;
+  var tot=0,vals=st.atmo.map(function(a){var v=a[1]*(1+(rng()-0.5)*0.08);tot+=v;return v;});
+  var tenths=vals.map(function(v){return Math.round(v/tot*1000);});
+  var sum=0;for(var q=1;q<tenths.length;q++)sum+=tenths[q];
+  tenths[0]=1000-sum;
+  var atmo=st.atmo.map(function(a,k){return [a[0],tenths[k]/10,a[2]];});
+  var biome=biomeOf(st,f,T);
+  return {id:'Z'+(i+1),key:key,name:name,dir:[f.x,f.y,f.z],lat:lat,lon:lon,h:f.h,g:f.g,biome:biome,
+    elev:Math.round(f.h*7200),tag:A.tag,pri:A.pri,pcol:A.pcol,
+    haz:{n:hz,label:HAZ[hz].l,col:HAZ[hz].c},atmo:atmo,
+    res:{all:Math.round(mx*0.5+avg*0.5),rows:[['MINERALS',rows[0]],['WATER',rows[1]],['ENERGY',rows[2]],['BIOMASS',rows[3]]]},
+    notes:A.notes.map(function(n){return cap1(fill(n,st.vocab));}),risk:fill(A.risk,st.vocab),
+    radius:1+dispOf(f.h,st.amp)+0.014};
+}
+
+/* cyclone centres: own seeded stream so terrain and sites are unaffected */
+function makeStorms(st,seed){
+  var rng=mulberry32((seed^0x57034AB1)>>>0),n=st.stormN[0]+Math.floor(rng()*(st.stormN[1]-st.stormN[0]+1)),out=[];
+  for(var i=0;i<3;i++){
+    if(i<n){
+      var y=(rng()*2-1)*0.75,ph=rng()*TAU,r=Math.sqrt(1-y*y);
+      out.push([r*Math.cos(ph),y,r*Math.sin(ph),0.16+rng()*0.2]);
+    }else out.push([0,1,0,0.001]);
+  }
+  return out;
+}
+function makePlanet(si,seed){
+  var st=STYLES[si],rng=mulberry32((seed^(st.salt*2654435))>>>0);
+  var sv=[0,0,0].map(function(){return Math.fround(Math.round((rng()*200-100)*1000)/1000);});
+  var T={s:sv,t0:st.t0,t1:st.t1,t2:st.t2};
+  var sites=pickSites(st,T,rng,seed===st.seed&&si===0);
+  return {si:si,st:st,seed:seed>>>0,T:T,sites:sites,sys:makeSystem(st,seed>>>0),storms:makeStorms(st,seed>>>0)};
+}
+/*PURE-END*/
+
+(function(){
+'use strict';
+var $=function(id){return document.getElementById(id)};
+
+/* ---------- renderer ---------- */
+var canvas=$('gl'), renderer;
+try{
+  renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:false,powerPreference:'high-performance'});
+}catch(err){ $('nogl').style.display='grid'; return; }
+var MAXRES=Math.min(window.devicePixelRatio||1,1.5), MINRES=0.55, res=Math.min(MAXRES,1.0), tier=0;
+renderer.setPixelRatio(res);
+renderer.setClearColor(0x02070b,1);
+var scene=new THREE.Scene();
+var camera=new THREE.PerspectiveCamera(42,1,0.1,500);
+camera.position.set(0.15,0.85,3.7);
+var controls=new THREE.OrbitControls(camera,canvas);
+controls.enableDamping=true; controls.dampingFactor=0.07; controls.enablePan=false;
+controls.minDistance=1.8; controls.maxDistance=9; controls.rotateSpeed=0.55; controls.zoomSpeed=0.7;
+
+function src(id){return $(id).textContent;}
+var COMMON=src('glsl-common'), TERRAIN=src('glsl-terrain');
+
+/* ---------- shared uniforms ---------- */
+var UNI={};
+(function(){
+  var t=styleUniforms(STYLES[0],[0,0,0]);
+  for(var k in t){var v=t[k];UNI[k]={value:Array.isArray(v)?(v.length===3?new THREE.Vector3():new THREE.Vector4()):v};}
+  ['uLight','uLight2','uCam','uSunCol','uSunCol2','uLightW','uLightW2'].forEach(function(k){UNI[k]={value:new THREE.Vector3()};});
+  UNI.uTime={value:0};UNI.uQ={value:0};UNI.uGrow={value:0};
+  UNI.uFlash={value:new THREE.Vector4(0,1,0,0)};
+  UNI.uStorm={value:[new THREE.Vector4(0,1,0,0.001),new THREE.Vector4(0,1,0,0.001),new THREE.Vector4(0,1,0,0.001)]};
+})();
+function setUniform(k,v){var u=UNI[k];if(!u)return;if(Array.isArray(v))u.value.fromArray(v);else u.value=v;}
+
+/* ---------- sky + stars ---------- */
+var sky=new THREE.Mesh(new THREE.SphereGeometry(300,32,24),new THREE.ShaderMaterial({uniforms:UNI,vertexShader:src('glsl-sky-vs'),fragmentShader:COMMON+src('glsl-sky-fs'),side:THREE.BackSide,depthWrite:false}));
+sky.renderOrder=-10; scene.add(sky);
+var starU={uTime:UNI.uTime,uPx:{value:Math.max(1,res)}};
+(function stars(){
+  var N=5200,NB=46,T=N+NB,pos=new Float32Array(T*3),size=new Float32Array(T),ph=new Float32Array(T),col=new Float32Array(T*3);
+  for(var i=0;i<T;i++){
+    var u=Math.random()*2-1,a=Math.random()*TAU,s=Math.sqrt(1-u*u),R=200;
+    pos[i*3]=R*s*Math.cos(a);pos[i*3+1]=R*u;pos[i*3+2]=R*s*Math.sin(a);
+    var k=Math.random(),tint=k<0.18?[0.7,0.85,1]:k<0.3?[1,0.88,0.7]:k<0.36?[1,0.7,0.6]:[1,1,1];
+    var br,sz;
+    if(i>=N){sz=7+Math.random()*5;br=1.1+Math.random()*0.4;}
+    else{var big=Math.random();sz=big>0.97?3.8:big>0.8?2.6:1.8+Math.random()*0.6;br=0.55+Math.random()*0.5;}
+    size[i]=sz;ph[i]=Math.random()*TAU;
+    col[i*3]=tint[0]*br;col[i*3+1]=tint[1]*br;col[i*3+2]=tint[2]*br;
+  }
+  var g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  g.setAttribute('aSize',new THREE.BufferAttribute(size,1));
+  g.setAttribute('aPhase',new THREE.BufferAttribute(ph,1));
+  g.setAttribute('aColor',new THREE.BufferAttribute(col,3));
+  var m=new THREE.ShaderMaterial({uniforms:starU,vertexShader:'uniform float uTime;\n'+src('glsl-star-vs'),fragmentShader:src('glsl-star-fs'),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
+  var pts=new THREE.Points(g,m); pts.frustumCulled=false; pts.renderOrder=-9; scene.add(pts);
+})();
+
+/* ---------- planet: one indexed icosphere, terrain baked on the CPU per seed ---------- */
+var SPH=buildSphere(64);
+var planetGroup=new THREE.Group(); scene.add(planetGroup);
+var planetGeo=new THREE.BufferGeometry();
+planetGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(SPH.n*3),3));
+planetGeo.setAttribute('normal',new THREE.BufferAttribute(new Float32Array(SPH.n*3),3));
+planetGeo.setAttribute('aH',new THREE.BufferAttribute(new Float32Array(SPH.n),1));
+planetGeo.setIndex(new THREE.BufferAttribute(SPH.idx,1));
+var planetMat=new THREE.ShaderMaterial({uniforms:UNI,vertexShader:src('glsl-planet-vs'),fragmentShader:COMMON+TERRAIN+src('glsl-planet-fs').replace('uSeedLiq()','uSeed')});
+var planet=new THREE.Mesh(planetGeo,planetMat); planet.frustumCulled=false; planetGroup.add(planet);
+var TRIS=SPH.idx.length/3;
+
+var cloudMat=new THREE.ShaderMaterial({uniforms:UNI,vertexShader:src('glsl-cloud-vs'),fragmentShader:COMMON+src('glsl-cloud-fs'),transparent:true,depthWrite:false});
+var clouds=new THREE.Mesh(new THREE.SphereGeometry(1,96,72),cloudMat); clouds.scale.setScalar(1.025); clouds.renderOrder=1; planetGroup.add(clouds);
+
+function atmMat(mode,side){
+  var u=Object.assign({},UNI); u.uMode={value:mode};
+  return new THREE.ShaderMaterial({uniforms:u,vertexShader:src('glsl-atm-vs'),fragmentShader:COMMON+src('glsl-atm-fs'),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:side});
+}
+var rimMesh=new THREE.Mesh(new THREE.SphereGeometry(1,64,48),atmMat(0,THREE.FrontSide)); rimMesh.renderOrder=2; scene.add(rimMesh);
+var haloMesh=new THREE.Mesh(new THREE.SphereGeometry(1,64,48),atmMat(1,THREE.BackSide)); haloMesh.renderOrder=0; scene.add(haloMesh);
+
+/* ---------- system: suns, moons, asteroid belt ---------- */
+var systemGroup=new THREE.Group(); scene.add(systemGroup);
+var sunQuads=[], moonObjs=[], beltGroup=null;
+function clearSystem(){
+  while(systemGroup.children.length){
+    var c=systemGroup.children.pop();
+    c.traverse(function(o){if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});
+  }
+  sunQuads=[];moonObjs=[];beltGroup=null;
+}
+function buildSystem(P){
+  clearSystem();
+  var s=P.st.scale, D=2.2+1.5*s, sys=P.sys;
+  sys.suns.forEach(function(sn,i){
+    var m=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.ShaderMaterial({uniforms:{uCol:{value:new THREE.Vector3().fromArray(sn.col)}},vertexShader:src('glsl-sun-vs'),fragmentShader:src('glsl-sun-fs'),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));
+    var sz=sn.size*5*(i?0.8:1);
+    m.scale.set(sz,sz,1); m.position.fromArray(sn.dir).multiplyScalar(190); m.renderOrder=-5; m.frustumCulled=false;
+    systemGroup.add(m); sunQuads.push(m);
+  });
+  var rMin=1.45*s+0.25, rMax=0.74*D;
+  if(sys.ring){
+    var rg=sys.ring;
+    rMin=Math.max(rMin,rg.outer+0.15); if(rMin>rMax-0.2)rMax=rMin+0.35;
+    var rgeo=new THREE.RingGeometry(rg.inner,rg.outer,160,1); rgeo.rotateX(-Math.PI/2);
+    var ru={uLightW:UNI.uLightW,uLightW2:UNI.uLightW2,uSunCol:UNI.uSunCol,uSunCol2:UNI.uSunCol2,uTime:UNI.uTime,
+      uRingS:{value:new THREE.Vector3().fromArray(rg.seed)},uRing:{value:new THREE.Vector3(rg.inner,rg.outer,s*1.02)},
+      uRC1:{value:new THREE.Vector3().fromArray(rg.c1)},uRC2:{value:new THREE.Vector3().fromArray(rg.c2)}};
+    var rmesh=new THREE.Mesh(rgeo,new THREE.ShaderMaterial({uniforms:ru,vertexShader:src('glsl-ring-vs'),fragmentShader:COMMON+src('glsl-ring-fs'),transparent:true,depthWrite:false,side:THREE.DoubleSide}));
+    var rgrp=new THREE.Group(); rgrp.rotation.set(rg.inc,rg.node,0); rgrp.add(rmesh); rmesh.renderOrder=1; systemGroup.add(rgrp);
+  }
+  sys.moons.forEach(function(mo){
+    var r=rMin+(rMax-rMin)*mo.frac, rad=s*mo.rad;
+    var og=new THREE.Group(); og.rotation.set(mo.inc,mo.node,0);
+    var pts=[];for(var k=0;k<=128;k++){var a=k/128*TAU;pts.push(new THREE.Vector3(Math.cos(a)*r,0,Math.sin(a)*r));}
+    og.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0x2de2d0,transparent:true,opacity:0.14,depthWrite:false})));
+    var mu={uC1:{value:new THREE.Vector3().fromArray(mo.c1)},uC2:{value:new THREE.Vector3().fromArray(mo.c2)},uMs:{value:new THREE.Vector3().fromArray(mo.seed)},
+      uLightW:UNI.uLightW,uLightW2:UNI.uLightW2,uSunCol:UNI.uSunCol,uSunCol2:UNI.uSunCol2,uTime:UNI.uTime};
+    var mesh=new THREE.Mesh(new THREE.SphereGeometry(rad,32,20),new THREE.ShaderMaterial({uniforms:mu,vertexShader:src('glsl-moon-vs'),fragmentShader:COMMON+src('glsl-moon-fs')}));
+    og.add(mesh); systemGroup.add(og);
+    moonObjs.push({mesh:mesh,r:r,phase:mo.phase,speed:mo.speed/Math.pow(r/rMin,1.5)*0.35});
+  });
+  if(sys.belt){
+    var bg=new THREE.Group(); bg.rotation.set(sys.belt.inc,sys.belt.node,0);
+    var r0=0.80*D,r1=0.98*D;
+    function layer(n,size,color,op){
+      var pos=new Float32Array(n*3),rr=mulberry32(P.seed^0xBE17);
+      for(var i=0;i<n;i++){var a=rr()*TAU,r=r0+(r1-r0)*Math.pow(rr(),0.8);pos[i*3]=Math.cos(a)*r;pos[i*3+1]=(rr()-0.5)*0.05*D*(0.4+rr());pos[i*3+2]=Math.sin(a)*r;}
+      var g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+      var p=new THREE.Points(g,new THREE.PointsMaterial({size:size,sizeAttenuation:false,color:color,transparent:true,opacity:op,depthWrite:false}));
+      p.frustumCulled=false;return p;
+    }
+    var tint=sys.belt.tint;
+    bg.add(layer(2600,1.4,new THREE.Color().setRGB(0.62+tint*0.2,0.55,0.48),0.7));
+    bg.add(layer(240,2.6,new THREE.Color().setRGB(0.85,0.8+tint*0.1,0.7),0.9));
+    systemGroup.add(bg); beltGroup=bg;
+  }
+}
+
+/* ---------- hotspots ---------- */
+var COL_BASE=new THREE.Color(0x39ff7a), COL_HOVER=new THREE.Color(0xb8fff0), COL_SEL=new THREE.Color(0xff9a2e);
+var markers=[], pickers=[], SITES=[];
+var Z_AXIS=new THREE.Vector3(0,0,1);
+function hexMat(color,op){return new THREE.MeshBasicMaterial({color:color.clone(),transparent:true,opacity:op,side:THREE.DoubleSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});}
+var tagsEl=$('tags'), linksEl=$('links'), NS='http://www.w3.org/2000/svg';
+var tagEls=[], lineEls=[], dotEls=[];
+var zlist=$('zlist'), panelEl=$('panel'), zoneIndexEl=$('zoneIndex');
+function fmtCoord(z){return Math.abs(z.lat).toFixed(1)+'° '+(z.lat>=0?'N':'S')+', '+Math.abs(z.lon).toFixed(1)+'° '+(z.lon>=0?'E':'W');}
+function buildSites(P){
+  markers.forEach(function(m){planetGroup.remove(m.g);m.g.traverse(function(o){if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});});
+  markers=[];pickers=[];tagsEl.innerHTML='';linksEl.innerHTML='';zlist.innerHTML='';tagEls=[];lineEls=[];dotEls=[];
+  SITES=P.sites;
+  var ms=Math.pow(1/P.st.scale,0.6);
+  SITES.forEach(function(z,i){
+    var dir=new THREE.Vector3().fromArray(z.dir);
+    var g=new THREE.Group(); g.position.copy(dir).multiplyScalar(z.radius); g.quaternion.setFromUnitVectors(Z_AXIS,dir); g.scale.setScalar(ms);
+    var spin=new THREE.Group(); spin.rotation.z=Math.PI/6; g.add(spin);
+    var fillM=new THREE.Mesh(new THREE.CircleGeometry(0.052,6),hexMat(COL_BASE,0.22));
+    var edge=new THREE.Mesh(new THREE.RingGeometry(0.046,0.056,6),hexMat(COL_BASE,0.95));
+    var inner=new THREE.Mesh(new THREE.RingGeometry(0.02,0.026,6),hexMat(COL_BASE,0.9));
+    var dot=new THREE.Mesh(new THREE.CircleGeometry(0.008,12),hexMat(COL_BASE,1));
+    var pulse=new THREE.Mesh(new THREE.RingGeometry(0.05,0.056,6),hexMat(COL_BASE,0.8));
+    spin.add(fillM,edge,inner,dot,pulse);
+    [fillM,edge,inner,dot,pulse].forEach(function(o){o.renderOrder=3;});
+    var pick=new THREE.Mesh(new THREE.CircleGeometry(0.075,16),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
+    pick.userData.index=i; g.add(pick); pickers.push(pick);
+    planetGroup.add(g);
+    markers.push({g:g,spin:spin,fill:fillM,edge:edge,inner:inner,dot:dot,pulse:pulse,facing:0,tint:new THREE.Color(COL_BASE)});
+
+    var b=document.createElement('button'); b.type='button'; b.className='tag';
+    b.innerHTML=z.name+'<small>'+z.id+' · '+z.biome+'</small>';
+    b.addEventListener('mouseenter',function(){setHover(i)});
+    b.addEventListener('mouseleave',function(){setHover(-1)});
+    b.addEventListener('focus',function(){setHover(i)});
+    b.addEventListener('blur',function(){setHover(-1)});
+    b.addEventListener('click',function(){selectZone(i)});
+    tagsEl.appendChild(b); tagEls.push(b);
+    var ln=document.createElementNS(NS,'line'); linksEl.appendChild(ln); lineEls.push(ln);
+    var c=document.createElementNS(NS,'circle'); c.setAttribute('r','2.5'); linksEl.appendChild(c); dotEls.push(c);
+
+    var r=document.createElement('button'); r.type='button'; r.className='zrow';
+    r.innerHTML='<span class="zn">'+z.id+'</span><b>'+z.name+'<small>'+z.biome+'</small></b><span class="chip '+z.pcol+'">'+z.pri+'</span>';
+    r.addEventListener('mouseenter',function(){setHover(i)});
+    r.addEventListener('mouseleave',function(){setHover(-1)});
+    r.addEventListener('click',function(){selectZone(i)});
+    zlist.appendChild(r);
+  });
+  $('zCount').textContent=SITES.length+' SITES';
+}
+
+/* ---------- panel ---------- */
+var SUB={N:'N<sub>2</sub>',O:'O<sub>2</sub>',CO:'CO<sub>2</sub>',HS:'H<sub>2</sub>S',H2O:'H<sub>2</sub>O',SO2:'SO<sub>2</sub>',CH4:'CH<sub>4</sub>',NH3:'NH<sub>3</sub>',Ar:'Ar',TRACE:'TRACE'};
+var deployTimer=null;
+function renderPanel(i){
+  var z=SITES[i];
+  var comp=z.atmo.map(function(a){return '<i style="width:'+a[1]+'%;background:'+a[2]+'" title="'+a[0]+'"></i>';}).join('');
+  var legend=z.atmo.map(function(a){return '<span style="--c:'+a[2]+'">'+(SUB[a[0]]||a[0])+' <b class="num">'+a[1].toFixed(1)+'%</b></span>';}).join('');
+  var pips='';for(var k=0;k<5;k++)pips+='<i class="'+(k<z.haz.n?'on':'')+'" style="--c:'+z.haz.col+'"></i>';
+  var res=z.res.rows.map(function(r){return '<div class="res"><span class="k">'+r[0]+'</span><div class="bar '+(r[1]>=75?'g':r[1]>=40?'':'o')+'"><i style="width:'+r[1]+'%"></i></div><span class="num">'+r[1]+'</span></div>';}).join('');
+  panelEl.innerHTML=
+   '<div class="ph"><span class="eyebrow">LANDING ZONE SPECIFICATION</span><button id="pClose" type="button" aria-label="Close panel">×</button></div>'+
+   '<h3 id="pName">'+z.name+'</h3>'+
+   '<div class="zid"><span class="chip t">'+z.id+'</span><span class="chip '+z.pcol+'">'+z.pri+'</span><span class="k">'+z.tag+'</span></div>'+
+   '<div class="row"><span class="k">COORDINATES</span><span class="t num">'+fmtCoord(z)+'</span></div>'+
+   '<div class="row"><span class="k">SURFACE</span><span class="t">'+z.biome+'</span></div>'+
+   '<div class="row"><span class="k">ELEVATION</span><span class="t num">'+(z.elev>=0?'+':'')+z.elev.toLocaleString('en-US')+' m</span></div>'+
+   '<div class="sec"><span class="lab">Atmospheric Composition</span><div class="comp">'+comp+'</div><div class="legend">'+legend+'</div></div>'+
+   '<div class="sec"><span class="lab">Hazard Rating</span><div class="pips">'+pips+'</div><div class="row"><span style="color:'+z.haz.col+'">'+z.haz.label+' · '+z.haz.n+'/5</span></div><div class="risk">'+z.risk+'</div></div>'+
+   '<div class="sec"><span class="lab">Resource Richness</span><div><span class="big num">'+z.res.all+'</span><span class="k">/ 100 COMPOSITE</span></div><div class="resg">'+res+'</div></div>'+
+   '<div class="sec"><span class="lab">Survey Notes</span><ul class="notes">'+z.notes.map(function(n){return '<li>'+n+'</li>';}).join('')+'</ul></div>'+
+   '<button id="deployBtn" class="deploy" type="button">Deploy Explorer</button>';
+  $('pClose').addEventListener('click',clearSelection);
+  $('deployBtn').addEventListener('click',function(){deploy(i);});
+  panelEl.scrollTop=0;
+}
+function note(t){$('evt').textContent='› '+t;}
+function deploy(i){
+  var btn=$('deployBtn'); if(!btn||btn.disabled) return;
+  var z=SITES[i], t0=performance.now(), dur=4200;
+  btn.disabled=true; btn.textContent='DESCENT IN PROGRESS';
+  note('EXPLORER-0'+(i+1)+' RELEASED · TARGET '+z.name.toUpperCase());
+  clearInterval(deployTimer);
+  deployTimer=setInterval(function(){
+    var k=Math.min(1,(performance.now()-t0)/dur);
+    btn.style.setProperty('--p',(k*100)+'%');
+    if(k>=1){clearInterval(deployTimer);btn.disabled=false;btn.classList.add('done');btn.textContent='EXPLORER ON SURFACE · LINK NOMINAL';note('EXPLORER-0'+(i+1)+' TOUCHDOWN · '+z.name.toUpperCase());}
+  },80);
+}
+
+/* ---------- interaction ---------- */
+var hover=-1, selected=-1, dragging=false, spinF=1, anim=null, distAnim=null;
+function setHover(i){
+  if(hover===i) return; hover=i;
+  var rows=zlist.children; for(var k=0;k<rows.length;k++) rows[k].classList.toggle('hover',k===i);
+}
+function selectZone(i){
+  if(selected===i&&!anim) return;
+  selected=i; spinF=0;
+  renderPanel(i);
+  panelEl.hidden=false; zoneIndexEl.hidden=true;
+  var wp=new THREE.Vector3(); markers[i].g.getWorldPosition(wp);
+  var startDir=camera.position.clone().normalize(), endDir=wp.clone().normalize();
+  var full=new THREE.Quaternion().setFromUnitVectors(startDir,endDir);
+  var part=new THREE.Quaternion().slerp(full,0.82);
+  var d0=camera.position.length();
+  anim={t0:performance.now(),dur:1500,startDir:startDir,part:part,d0:d0,d1:Math.min(d0,baseDist*0.8)};
+  controls.enabled=false; distAnim=null;
+  note('TARGET LOCK · '+SITES[i].name.toUpperCase()+' · '+fmtCoord(SITES[i]));
+}
+function clearSelection(){
+  selected=-1; panelEl.hidden=true; zoneIndexEl.hidden=false; clearInterval(deployTimer);
+  note('ZONE RELEASED · AUTO-ROTATION RESUMING');
+}
+window.addEventListener('keydown',function(e){if(e.key==='Escape'&&selected>=0&&document.activeElement!==$('seedIn'))clearSelection();});
+controls.addEventListener('start',function(){dragging=true;canvas.classList.add('grabbing');});
+controls.addEventListener('end',function(){dragging=false;canvas.classList.remove('grabbing');});
+
+var ray=new THREE.Raycaster(), ndc=new THREE.Vector2(), downAt=null;
+function pickAt(cx,cy){
+  var r=canvas.getBoundingClientRect();
+  ndc.set(((cx-r.left)/r.width)*2-1,-((cy-r.top)/r.height)*2+1);
+  ray.setFromCamera(ndc,camera);
+  var hits=ray.intersectObjects(pickers,false);
+  for(var k=0;k<hits.length;k++){var i=hits[k].object.userData.index; if(markers[i]&&markers[i].facing>0.2) return i;}
+  return -1;
+}
+canvas.addEventListener('pointermove',function(e){
+  if(dragging) return;
+  var i=pickAt(e.clientX,e.clientY);
+  canvas.classList.toggle('pointer',i>=0);
+  setHover(i);
+});
+canvas.addEventListener('pointerdown',function(e){downAt={x:e.clientX,y:e.clientY};});
+canvas.addEventListener('pointerup',function(e){
+  if(!downAt) return;
+  var moved=Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y); downAt=null;
+  if(moved<6){var i=pickAt(e.clientX,e.clientY); if(i>=0) selectZone(i);}
+});
+
+/* ---------- sizing ---------- */
+var W=1,H=1;
+function resize(){
+  W=window.innerWidth;H=window.innerHeight;
+  renderer.setPixelRatio(res);
+  renderer.setSize(W,H,false); camera.aspect=W/H;
+  camera.fov=W<H?58:42; camera.updateProjectionMatrix();
+  linksEl.setAttribute('viewBox','0 0 '+W+' '+H);
+  starU.uPx.value=Math.max(1,res);
+}
+window.addEventListener('resize',resize); resize();
+
+/* ---------- planet loading / regeneration ---------- */
+var cur={si:0,seed:STYLES[0].seed}, P=null, baseDist=3.7, genId=0, growT=0, busy=false;
+var tabsEl=$('tabs');
+STYLES.forEach(function(st,i){
+  var b=document.createElement('button'); b.type='button'; b.className='ptab'; b.setAttribute('role','tab');
+  b.innerHTML=st.name+'<small>Ø '+st.km.toLocaleString('en-US')+' KM</small>';
+  b.addEventListener('click',function(){ if(busy)return; loadPlanet(i,STYLES[i].seed); });
+  tabsEl.appendChild(b);
+});
+function randSeed(){var a=new Uint32Array(1);if(window.crypto&&crypto.getRandomValues){crypto.getRandomValues(a);return a[0];}return (Math.random()*4294967296)>>>0;}
+$('regen').addEventListener('click',function(){ if(busy)return; loadPlanet(cur.si,randSeed()); });
+function applySeedInput(){ if(busy)return; var s=parseSeed($('seedIn').value); if($('seedIn').value.trim()==='')return; loadPlanet(cur.si,s); }
+$('seedApply').addEventListener('click',applySeedInput);
+$('seedIn').addEventListener('keydown',function(e){if(e.key==='Enter')applySeedInput();});
+
+function setBusy(b,pct){
+  busy=b; $('regen').disabled=b; $('seedApply').disabled=b;
+  $('regen').textContent=b?('GENERATING '+Math.round((pct||0)*100)+'%'):'REGENERATE';
+}
+function loadPlanet(si,seed){
+  var id=++genId;
+  clearSelection(); selected=-1;
+  setBusy(true,0);
+  var Pn=makePlanet(si,seed>>>0);
+  var pos=new Float32Array(SPH.n*3), hArr=new Float32Array(SPH.n), i0=0;
+  note('GENERATING '+Pn.st.name+' · SEED 0x'+seedHex(seed)+'…');
+  (function step(){
+    if(id!==genId)return;
+    var e=Math.min(SPH.n,i0+6000);
+    terrainRange(Pn,SPH,pos,hArr,i0,e); i0=e;
+    setBusy(true,i0/SPH.n);
+    if(i0<SPH.n){setTimeout(step,0);return;}
+    var nrm=computeNormals(pos,SPH.idx);
+    planetGeo.attributes.position.array.set(pos);planetGeo.attributes.position.needsUpdate=true;
+    planetGeo.attributes.normal.array.set(nrm);planetGeo.attributes.normal.needsUpdate=true;
+    planetGeo.attributes.aH.array.set(hArr);planetGeo.attributes.aH.needsUpdate=true;
+    finishLoad(Pn);
+  })();
+}
+var sunDirs=[new THREE.Vector3(),new THREE.Vector3()], flashDir=new THREE.Vector3(), flashI=0;
+function finishLoad(Pn){
+  P=Pn; cur={si:Pn.si,seed:Pn.seed};
+  var st=P.st, u=styleUniforms(st,P.T.s);
+  for(var k in u) setUniform(k,u[k]);
+  var suns=P.sys.suns;
+  sunDirs[0].fromArray(suns[0].dir).normalize();
+  UNI.uLightW.value.copy(sunDirs[0]);
+  UNI.uSunCol.value.set(suns[0].col[0],suns[0].col[1],suns[0].col[2]).multiplyScalar(suns[0].inten);
+  if(suns[1]){sunDirs[1].fromArray(suns[1].dir).normalize();UNI.uLightW2.value.copy(sunDirs[1]);UNI.uSunCol2.value.set(suns[1].col[0],suns[1].col[1],suns[1].col[2]).multiplyScalar(suns[1].inten*suns[1].rel);}
+  else{sunDirs[1].set(0,1,0);UNI.uLightW2.value.set(0,1,0);UNI.uSunCol2.value.set(0,0,0);}
+  var s=st.scale;
+  planetGroup.scale.setScalar(s); rimMesh.scale.setScalar(1.04*s); haloMesh.scale.setScalar(1.2*s);
+  baseDist=2.2+1.5*s;
+  controls.minDistance=1.5*s+0.3; controls.maxDistance=baseDist*2.6;
+  distAnim={t0:performance.now(),dur:1400,from:camera.position.length(),to:baseDist};
+  for(var si3=0;si3<3;si3++){var sm=P.storms[si3];UNI.uStorm.value[si3].set(sm[0],sm[1],sm[2],sm[3]);}
+  flashI=0; UNI.uFlash.value.w=0;
+  buildSystem(P); buildSites(P);
+  growT=0; UNI.uGrow.value=0;
+  $('seedIn').value=seedHex(P.seed);
+  Array.prototype.forEach.call(tabsEl.children,function(b,i){b.classList.toggle('on',i===P.si);b.setAttribute('aria-selected',i===P.si);});
+  $('brandSub').textContent=st.name+' · '+st.kind+' · SEED 0x'+seedHex(P.seed);
+  $('dPlanet').textContent=st.name;
+  $('dStar').innerHTML=suns.map(function(sn){return '<span class="swatch" style="background:rgb('+sn.col.map(function(c){return Math.round(c*255);}).join(',')+')"></span>'+sn.label+' '+sn.temp.toLocaleString('en-US')+' K';}).join('<br>');
+  $('dMoons').textContent=P.sys.moons.length;
+  $('dBelt').textContent=P.sys.belt?'YES':'NO';
+  $('dRing').textContent=P.sys.ring?'YES':'NO';
+  $('dStorm').textContent=P.storms.filter(function(s){return s[3]>0.01;}).length;
+  $('dDiam').textContent=st.km.toLocaleString('en-US')+' KM';
+  setBusy(false);
+  note('SEED 0x'+seedHex(P.seed)+' · '+P.sites.length+' SITES · '+suns.length+(suns.length>1?' SUNS · ':' SUN · ')+P.sys.moons.length+' MOONS'+(P.sys.belt?' · BELT':'')+(P.sys.ring?' · RINGS':''));
+}
+
+/* ---------- stats + adaptive quality (targets 30-60 fps) ---------- */
+var histR=[]; for(var h0=0;h0<46;h0++)histR.push(0.3);
+var frameMs=16, fpsV=60;
+function spark(id,arr,color){
+  var c=$(id),x=c.getContext('2d'),w=c.width,h=c.height; x.clearRect(0,0,w,h);
+  x.strokeStyle='rgba(45,226,208,.12)';x.lineWidth=1;
+  for(var g=1;g<4;g++){x.beginPath();x.moveTo(0,h*g/4);x.lineTo(w,h*g/4);x.stroke();}
+  x.beginPath();
+  for(var i=0;i<arr.length;i++){var px=i/(arr.length-1)*w,py=h-4-arr[i]*(h-10); if(i)x.lineTo(px,py);else x.moveTo(px,py);}
+  x.strokeStyle=color;x.lineWidth=2;x.stroke();
+  x.lineTo(w,h);x.lineTo(0,h);x.closePath();x.fillStyle=color.replace('1)','.14)');x.fill();
+}
+var TIERS=['HIGH','MEDIUM','LOW'];
+function statsTick(){
+  histR.push(Math.min(1,frameMs/33));histR.shift();
+  $('dRender').textContent=frameMs.toFixed(1)+' ms'; $('dFps').textContent=Math.round(fpsV)+' FPS';
+  $('dRes').textContent=Math.round(res*100)+'%'; $('dTier').textContent=TIERS[tier];
+  spark('gRender',histR,'rgba(45,226,208,1)');
+}
+$('dTris').textContent=TRIS.toLocaleString('en-US');
+setInterval(statsTick,500);
+var perfCool=90, perfN=0;
+function perfAdjust(){
+  if(perfCool>0){perfCool--;return;}
+  if(fpsV<42){
+    if(res>MINRES+0.01){res=Math.max(MINRES,res-0.1);resize();perfCool=40;}
+    else if(tier<2){tier++;UNI.uQ.value=tier;perfCool=60;}
+  }else if(fpsV>58&&res<MAXRES-0.01){res=Math.min(MAXRES,res+0.05);resize();perfCool=120;}
+}
+
+/* ---------- main loop ---------- */
+var tmpV=new THREE.Vector3(), nrmV=new THREE.Vector3(), camV=new THREE.Vector3(), invQ=new THREE.Quaternion(), idQ=new THREE.Quaternion();
+var last=performance.now(), lastRender=0, tAcc=0, fpsEMA=60, tagW=[], tagH=[], frameN=0;
+function ease(k){return k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;}
+function loop(now){
+  requestAnimationFrame(loop);
+  if(now-lastRender<15){return;}
+  lastRender=now;
+  var dt=Math.min(0.05,(now-last)/1000); last=now; tAcc+=dt; frameN++;
+  if(dt>0){fpsEMA+=(1/dt-fpsEMA)*0.06; fpsV=fpsEMA; frameMs+=(dt*1000-frameMs)*0.1;}
+  if(frameN%10===0)perfAdjust();
+  var st=P?P.st:STYLES[0];
+
+  var target=(selected>=0||dragging)?0:1;
+  spinF+=(target-spinF)*(1-Math.exp(-dt*(target?1.1:7)));
+  planetGroup.rotation.y+=dt*st.spin*spinF;
+  clouds.rotation.y+=dt*0.004;
+  if(P&&st.flash[3]>0){
+    flashI*=Math.exp(-dt*4.5);
+    if(flashI<0.05&&Math.random()<dt*st.flash[3]*3){
+      var cs=P.storms[Math.floor(Math.random()*3)];
+      if(cs[3]>0.01){
+        flashDir.set(cs[0]+(Math.random()-0.5)*cs[3]*2,cs[1]+(Math.random()-0.5)*cs[3]*2,cs[2]+(Math.random()-0.5)*cs[3]*2).normalize();
+        UNI.uFlash.value.x=flashDir.x;UNI.uFlash.value.y=flashDir.y;UNI.uFlash.value.z=flashDir.z; flashI=1;
+      }
+    }
+    UNI.uFlash.value.w=flashI*(0.5+0.5*Math.abs(Math.sin(tAcc*34)));
+  }
+  UNI.uTime.value=tAcc;
+  if(growT<1){growT=Math.min(1,growT+dt/1.2);UNI.uGrow.value=1-Math.pow(1-growT,3);}
+  var reveal=clamp((growT-0.75)/0.25,0,1);
+
+  for(var mi=0;mi<moonObjs.length;mi++){var mo=moonObjs[mi],a=mo.phase+tAcc*mo.speed;mo.mesh.position.set(Math.cos(a)*mo.r,0,Math.sin(a)*mo.r);mo.mesh.rotation.y=-a;}
+  if(beltGroup)beltGroup.rotation.y+=dt*0.01;
+  for(var si=0;si<sunQuads.length;si++)sunQuads[si].lookAt(camera.position);
+
+  if(anim){
+    var k=Math.min(1,(now-anim.t0)/anim.dur), e=ease(k);
+    var q=idQ.clone().slerp(anim.part,e);
+    var dir=anim.startDir.clone().applyQuaternion(q);
+    camera.position.copy(dir.multiplyScalar(anim.d0+(anim.d1-anim.d0)*e));
+    if(k>=1){anim=null;controls.enabled=true;}
+  }else if(distAnim){
+    var k2=Math.min(1,(now-distAnim.t0)/distAnim.dur);
+    camera.position.setLength(distAnim.from+(distAnim.to-distAnim.from)*ease(k2));
+    if(k2>=1)distAnim=null;
+  }
+  controls.update();
+
+  planetGroup.updateMatrixWorld(true);
+  invQ.copy(planetGroup.quaternion).invert();
+  UNI.uLight.value.copy(UNI.uLightW.value).applyQuaternion(invQ);
+  UNI.uLight2.value.copy(UNI.uLightW2.value).applyQuaternion(invQ);
+  UNI.uCam.value.copy(camera.position).applyQuaternion(invQ).divideScalar(planetGroup.scale.x);
+
+  for(var i=0;i<markers.length;i++){
+    var m=markers[i];
+    m.g.getWorldPosition(tmpV);
+    nrmV.copy(tmpV).normalize(); camV.copy(camera.position).sub(tmpV).normalize();
+    m.facing=nrmV.dot(camV);
+    var want=selected===i?COL_SEL:(hover===i?COL_HOVER:COL_BASE);
+    m.tint.lerp(want,0.25);
+    var pulseK=(tAcc*0.9+i*0.23)%1;
+    var beat=1+0.1*Math.sin(tAcc*3.2+i);
+    m.spin.scale.setScalar((hover===i?1.25:selected===i?1.12:1)*beat*reveal);
+    [m.fill,m.edge,m.inner,m.dot,m.pulse].forEach(function(o){o.material.color.copy(m.tint);});
+    m.fill.material.opacity=0.16+0.12*(0.5+0.5*Math.sin(tAcc*3.2+i))+(hover===i?0.15:0);
+    m.pulse.scale.setScalar(1+pulseK*1.2); m.pulse.material.opacity=0.8*(1-pulseK);
+
+    tmpV.project(camera);
+    var sx=(tmpV.x*0.5+0.5)*W, sy=(-tmpV.y*0.5+0.5)*H;
+    var vis=clamp((m.facing-0.12)/0.2,0,1)*reveal;
+    var tag=tagEls[i];
+    if(frameN%30===1||!tagW[i]){tagW[i]=tag.offsetWidth;tagH[i]=tag.offsetHeight;}
+    var side=sx>W*0.5?1:-1;
+    var lx=side>0?sx+46:sx-46-tagW[i], ly=sy-74;
+    var ex=side>0?lx:lx+tagW[i], ey=ly+tagH[i];
+    tag.style.transform='translate('+lx.toFixed(1)+'px,'+ly.toFixed(1)+'px)';
+    tag.style.opacity=vis.toFixed(2); tag.style.pointerEvents=vis>0.6?'auto':'none';
+    tag.classList.toggle('hover',hover===i); tag.classList.toggle('sel',selected===i);
+    var ln=lineEls[i], dt2=dotEls[i], cls=selected===i?'sel':hover===i?'hover':'';
+    ln.setAttribute('x1',(sx+(side>0?10:-10)).toFixed(1));ln.setAttribute('y1',(sy-8).toFixed(1));ln.setAttribute('x2',ex.toFixed(1));ln.setAttribute('y2',ey.toFixed(1));
+    ln.style.opacity=(vis*0.9).toFixed(2); ln.setAttribute('class',cls);
+    dt2.setAttribute('cx',ex.toFixed(1));dt2.setAttribute('cy',ey.toFixed(1)); dt2.style.opacity=vis.toFixed(2); dt2.setAttribute('class',cls);
+  }
+  renderer.render(scene,camera);
+}
+loadPlanet(0,STYLES[0].seed);
+requestAnimationFrame(loop);
+})();
+</script>
+
+</body></html>

@@ -16,16 +16,27 @@ This repository contains the full source of the playable game (codebase working 
 
 ## Screenshots
 
-All captured from the production build (seed 42). Planets are generated per seed; each type weights a different terrain mix, and terrain is revealed as the expedition explores.
+### Orbital survey: procedural globe planets
+
+Seeded planets rendered with custom GLSL shaders, each with 3 to 5 landing sites placed on matching terrain. The prototype lives in [`demos/orbital-planets`](demos/orbital-planets).
+
+![Verdance, a temperate ocean world, with the Aethelgard Plains landing zone selected and its specification panel open](docs/screenshots/orbital-verdance-zone.png)
 
 | | |
 |---|---|
-| ![Temperate planet: plains, highlands and ice regions around the landing zone](docs/screenshots/planet-temperate.png) | ![Arid planet: plains, farmland, a crater region and ruins](docs/screenshots/planet-arid.png) |
-| **Temperate** planet, first regions explored | **Arid** planet with crater and ruins |
-| ![Jungle planet: dense tree-covered hexes with a farmland find](docs/screenshots/planet-jungle.png) | ![Frozen planet: ice, highlands and crater hexes with a water find](docs/screenshots/planet-frozen.png) |
-| **Jungle** planet, dense forest hexes | **Frozen** planet with a water find on the ice |
-| ![Ancient planet: highlands and plains with ruins](docs/screenshots/planet-ancient.png) | ![A founded colony on a jungle planet with its settlement and the colony panel](docs/screenshots/colony.png) |
-| **Ancient** planet with ruins | **Colonization:** a founded colony and its status panel |
+| ![Cinder, a volcanic lava world with glowing magma seas and two landing zone markers](docs/screenshots/orbital-cinder.png) | ![Miasma, a toxic nebulous world with green and purple terrain, a planetary ring and an asteroid belt](docs/screenshots/orbital-miasma.png) |
+| **Cinder**, volcanic lava world | **Miasma**, toxic nebulous world with a ring |
+| ![Glacia, a frozen ice world with a moon and a landing zone marker](docs/screenshots/orbital-glacia.png) | ![Dune, an arid desert world with three moons and landing zone markers](docs/screenshots/orbital-dune.png) |
+| **Glacia**, frozen ice world | **Dune**, arid desert world |
+
+### In the game
+
+![Mission Command on the galaxy map: hull choice, loadout dials and the live ETA, supply margin and founding odds preview before launch](docs/screenshots/mission-command.png)
+
+| | |
+|---|---|
+| ![Frozen hex planet: ice, highlands and crater regions with a water find](docs/screenshots/planet-frozen.png) | ![A founded colony on a jungle hex planet with its settlement and the colony panel](docs/screenshots/colony.png) |
+| Planetfall on a **frozen** hex planet | A founded **colony** on a jungle planet |
 
 ## Goals
 
