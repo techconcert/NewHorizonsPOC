@@ -103,6 +103,7 @@ src/render   Three.js galaxy, system and planet views
 src/ui       DOM panels, HUD and view models
 tests        Vitest suites
 smoke        headless-browser smoke scripts
+demos        orbital planet prototype (standalone Three.js page)
 docs         design, architecture, balance and decision log
 ```
 
