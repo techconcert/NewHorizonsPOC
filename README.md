@@ -12,7 +12,7 @@ Every launch is a gamble. You split a fixed cargo capacity across six dials (pas
 
 The goal is to build a self-sustaining colony network before the homeworld collapses. A run is meant to last about 90 to 150 minutes.
 
-The playable game lives in the **colony-web** codebase (working title "Colony Ship"), which this project overview describes.
+This repository contains the full source of the playable game (codebase working title "Colony Ship").
 
 ## Goals
 
@@ -52,11 +52,11 @@ A recorded balance sweep (40 seeds per archetype, 240 runs) puts win rates betwe
 - **Saves.** A save is the seed plus the command log, stored in the browser (IndexedDB) and replayed on load; it can also be exported to and imported from a `.json` file.
 - **Tests and CI.** About 60 Vitest suites cover the sim, determinism and replay, content, balance, render logic and UI models. CI runs typecheck, lint, the dependency boundary check, tests and the production build.
 
-The `colony-web` source is about 140 files across `src/sim`, `src/worker`, `src/shared`, `src/data`, `src/render` and `src/ui`.
+The source is about 140 files across `src/sim`, `src/worker`, `src/shared`, `src/data`, `src/render` and `src/ui`.
 
 ## Getting started
 
-For the colony-web codebase (these commands come from its `package.json`):
+Requires Node.js. Install dependencies with `npm install`, then:
 
 ```
 npm run dev       # Vite dev server; add ?debug for the frame overlay, ?seed=123 for a fixed galaxy
@@ -68,9 +68,21 @@ npm run ci        # typecheck, lint, dependency rules, tests, build
 
 WebGL2 is required. The build is plain static files and can be hosted on any static host.
 
-## Repository status
+## Repository layout
 
-This repository currently holds the project overview and license. The source lives in the project workspace.
+```
+src/sim      ECS simulation (runs in the Web Worker, no DOM or Three.js)
+src/worker   worker entry and message handling
+src/shared   types and pure logic shared by sim and UI
+src/data     JSON content and its validator
+src/render   Three.js galaxy, system and planet views
+src/ui       DOM panels, HUD and view models
+tests        Vitest suites
+smoke        headless-browser smoke scripts
+docs         design, architecture, balance and decision log
+```
+
+Developer notes: [docs/DEVELOPER.md](docs/DEVELOPER.md). Design: [GAME_DESIGN](docs/GAME_DESIGN.md), [ARCHITECTURE](docs/ARCHITECTURE.md), [DECISIONS](docs/DECISIONS.md), [BALANCE](docs/BALANCE.md).
 
 ## License
 

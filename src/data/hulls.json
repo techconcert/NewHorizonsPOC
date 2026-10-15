@@ -1,0 +1,29 @@
+{
+  "_note": "PLACEHOLDER numbers (see docs/BALANCE.md). Tune here, never in code.",
+  "hulls": [
+    {
+      "id": "scout",
+      "name": "Scout",
+      "cargoCapacity": 60,
+      "baseSpeed": 6,
+      "hullRating": 30,
+      "productionCost": 40
+    },
+    {
+      "id": "ark",
+      "name": "Ark",
+      "cargoCapacity": 200,
+      "baseSpeed": 4,
+      "hullRating": 50,
+      "productionCost": 120
+    },
+    {
+      "id": "heavy_ark",
+      "name": "Heavy Ark",
+      "cargoCapacity": 400,
+      "baseSpeed": 3,
+      "hullRating": 80,
+      "productionCost": 260
+    }
+  ]
+}

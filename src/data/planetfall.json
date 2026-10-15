@@ -1,0 +1,106 @@
+{
+  "_note": "PLACEHOLDER numbers (see docs/BALANCE.md, M4). Tune here, never in code. Percent factors: 100 is neutral. Disposition arrays are indexed None, Peaceful, Wary, Hostile; stance arrays Cautious, Balanced, Bold; terrain arrays follow terrain.json (plains, highlands, jungle, ice, crater, ruins).",
+  "stances": {
+    "successPct": [110, 100, 90],
+    "hazardPct": [50, 100, 200],
+    "regionsPerRound": [1, 1, 2],
+    "roundDays": [15, 10, 10]
+  },
+  "terrainExploreBasePct": [85, 70, 55, 65, 50, 60],
+  "hazardPctByLevel": [0, 10, 20, 35],
+  "splitHazardPct": 150,
+  "minExplorersPerTeam": 2,
+  "team": {
+    "minPct": 60,
+    "maxPct": 120,
+    "fullExplorers": 60
+  },
+  "kit": {
+    "minPct": 80,
+    "maxPct": 130,
+    "fullSteps": 8
+  },
+  "successMinPct": 5,
+  "successMaxPct": 95,
+  "hazard": {
+    "injuryWeight": 40,
+    "deathWeight": 25,
+    "supplyLossWeight": 35,
+    "injuryPct": 10,
+    "deathPct": 8,
+    "supplyLossPct": 15,
+    "diseaseInjuredPct": 6
+  },
+  "natives": {
+    "guideSuccessPct": 115,
+    "hostileHomeSuccessPct": 90,
+    "sharedFoodPerExplorer": 2,
+    "strengthBase": 50,
+    "ambushBasePct": [0, 0, 0, 50],
+    "ambushHarmPct": [0, 0, 0, 10],
+    "securityReductionPctPerGuard": 5,
+    "securityReductionMaxPct": 75,
+    "variants": [
+      {
+        "id": "traders",
+        "name": "Traders",
+        "disposition": "Peaceful",
+        "strengthDelta": -10,
+        "flavour": "Settled river markets. They sell more than they guard."
+      },
+      {
+        "id": "guides",
+        "name": "Guides",
+        "disposition": "Peaceful",
+        "strengthDelta": -5,
+        "flavour": "Hill-walkers who know every pass and offer to lead strangers across it."
+      },
+      {
+        "id": "herders",
+        "name": "Herders",
+        "disposition": "Wary",
+        "strengthDelta": 0,
+        "flavour": "Herd-keepers who follow the grass and tolerate strangers who keep to the trail."
+      },
+      {
+        "id": "hermits",
+        "name": "Hermits",
+        "disposition": "Wary",
+        "strengthDelta": -10,
+        "flavour": "Scattered households that avoid contact and watch from a distance."
+      },
+      {
+        "id": "raiders",
+        "name": "Raiders",
+        "disposition": "Hostile",
+        "strengthDelta": 10,
+        "flavour": "Fast bands that take what travellers carry."
+      },
+      {
+        "id": "holdouts",
+        "name": "Holdouts",
+        "disposition": "Hostile",
+        "strengthDelta": 5,
+        "flavour": "A fortified people who treat every approach to their land as an attack."
+      }
+    ]
+  },
+  "founding": {
+    "reserveDays": 30,
+    "planGroundDays": 20,
+    "bandGiftDays": 2,
+    "bandColonistLossPct": 10,
+    "bandSupplyLossPct": 10,
+    "viableColonists": 400,
+    "colonistsMinPct": 60,
+    "findWeightPct": 60,
+    "findSitePct": [80, 70, 40, 60, 90, 10, 30, 30, 50, 40, 20],
+    "nativesPct": [100, 100, 92, 80],
+    "nativeHomePenaltyPts": 15,
+    "securityPtsPerGuard": 1,
+    "securityMaxPts": 20,
+    "thrivingSharePct": 60,
+    "strugglingPenaltyDays": 60,
+    "failedLossPct": 50
+  }
+}

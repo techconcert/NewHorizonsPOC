@@ -1,0 +1,1441 @@
+/* ==========================================================================
+   Colony Ship UI theme (M6a)
+   One set of tokens (colour, spacing, radius, type size), always dark by default (the canvases are
+   dark), a light variant only when the player turns it on with the menu button (data-theme='light'). System fonts only, no external assets.
+   Font sizes and spacing are in rem so the UI follows the browser's text size and 125% zoom;
+   panel widths are px because the planet view keeps clear of them by the same numbers
+   (src/render/viewArea.ts).
+   ========================================================================== */
+:root {
+  /* colour */
+  --space: #05070d; /* the canvas behind everything: always dark */
+  --bg: #05070d;
+  --panel: rgba(12, 18, 32, 0.9);
+  --panel-solid: #0c1220;
+  --panel-2: rgba(160, 190, 255, 0.06);
+  --panel-hover: rgba(160, 190, 255, 0.14);
+  --line: #24324f;
+  --line-strong: #3b4d76;
+  --text: #d6e4ff;
+  --dim: #8da2c8;
+  --muted: #a9bbdd;
+  --accent: #3dffb0;
+  --accent-ink: #02130c;
+  --accent-soft: rgba(61, 255, 176, 0.1);
+  --good: #7fe3a0;
+  --warn: #ffcf5d;
+  --bad: #ff6b5b;
+  --bad-soft: #ff8a7a;
+  --bad-bg: #4a1410;
+  --info: #7fe9ff;
+  --violet: #d98bff;
+  --focus: #7fe9ff;
+  --shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+  --scrim: rgba(2, 4, 10, 0.35);
+  /* colony close-up grade (M6c): vignette, top and bottom bands, warm tint */
+  --vignette: rgba(2, 4, 10, 0.78);
+  --vignette-band: rgba(2, 4, 10, 0.4);
+  --grade: rgba(255, 190, 120, 0.07);
+  /* spacing */
+  --s1: 0.25rem;
+  --s2: 0.5rem;
+  --s3: 0.75rem;
+  --s4: 1rem;
+  /* radius */
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 10px;
+  /* type */
+  --fs-xs: 0.6875rem;
+  --fs-sm: 0.75rem;
+  --fs-md: 0.8125rem;
+  --fs-lg: 0.875rem;
+  --fs-xl: 1.125rem;
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  /* layout */
+  --hud-h: 2.75rem;
+  --gap: 8px;
+  --col-w: 420px;
+  --mc-w: 310px;
+  color-scheme: dark;
+}
+:root[data-theme='light'] {
+  --bg: #eef2f9;
+  --panel: rgba(255, 255, 255, 0.985);
+  --panel-solid: #ffffff;
+  --panel-2: rgba(20, 50, 110, 0.05);
+  --panel-hover: rgba(20, 50, 110, 0.12);
+  --line: #c3cde0;
+  --line-strong: #8c9bb8;
+  --text: #13203a;
+  --dim: #4b5d80;
+  --muted: #36466a;
+  --accent: #00794f;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(0, 121, 79, 0.1);
+  --good: #1d7a3a;
+  --warn: #8a5a00;
+  --bad: #b3261e;
+  --bad-soft: #b3261e;
+  --bad-bg: #fde8e6;
+  --info: #005f80;
+  --violet: #7a2fb0;
+  --focus: #0057d9;
+  --shadow: 0 4px 18px rgba(20, 40, 90, 0.2);
+  --scrim: rgba(230, 236, 248, 0.5);
+  color-scheme: light;
+}
+/* Colour-blind-safe palette (M8): blue / orange / pink replace green / amber / red. Status text
+   always carries a symbol and a word as well (see the status icon block at the end). */
+:root[data-palette='cb'] {
+  --accent: #5cc8ff;
+  --accent-ink: #02131c;
+  --accent-soft: rgba(92, 200, 255, 0.1);
+  --good: #6ec1ff;
+  --warn: #ffb000;
+  --bad: #ff7ac8;
+  --bad-soft: #ff9ad5;
+  --bad-bg: #4a1233;
+}
+:root[data-theme='light'][data-palette='cb'] {
+  --accent: #005a9e;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(0, 90, 158, 0.1);
+  --good: #00589b;
+  --warn: #8a4b00;
+  --bad: #a3006b;
+  --bad-soft: #a3006b;
+  --bad-bg: #fbe3f0;
+}
+/* Top bar stats: full text on wide screens, short labels under 1500 px (tooltip keeps the full text). */
+.hs-short {
+  display: none;
+}
+@media (max-width: 1499px) {
+  .hs-full {
+    display: none;
+  }
+  .hs-short {
+    display: inline;
+  }
+}
+@media (max-width: 1100px) {
+  :root {
+    --col-w: 360px;
+    --mc-w: 270px;
+  }
+  .hud-research {
+    display: none; /* the Research section in the right column shows the same line */
+  }
+}
+
+/* ---- Base ---------------------------------------------------------------- */
+html {
+  font-size: 100%; /* rem follows the browser's text size setting */
+}
+/* An author display rule must never beat the hidden attribute (an empty ship table used to stay). */
+[hidden] {
+  display: none !important;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--space);
+  color: var(--text);
+  overflow: hidden;
+}
+body {
+  font: 0.875rem/1.45 var(--font);
+}
+button,
+select,
+input {
+  font: inherit;
+  color: inherit;
+}
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion='full']) * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+/* Settings override (M8): "Always reduce motion". */
+:root[data-motion='reduce'] * {
+  transition: none !important;
+  animation: none !important;
+}
+#galaxy {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  cursor: grab;
+}
+#hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* ---- Buttons: secondary (default), primary, danger ------------------------ */
+.hud-btn {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  padding: 0.15rem 0.65rem;
+  min-height: 1.75rem;
+  cursor: pointer;
+  font: inherit;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+.hud-btn:hover:not(:disabled) {
+  background: var(--panel-hover);
+  border-color: var(--dim);
+}
+.hud-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.hud-btn.active {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.hud-btn.queued {
+  border-style: dashed;
+  border-color: var(--accent);
+}
+.hud-btn.mc-launch,
+.hud-btn--primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.hud-btn.mc-launch:hover:not(:disabled),
+.hud-btn--primary:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  filter: brightness(1.1);
+}
+.hud-btn.mc-launch:disabled,
+.hud-btn--primary:disabled {
+  background: transparent;
+  color: var(--dim);
+  border-color: var(--line-strong);
+  opacity: 1;
+}
+.hud-btn--danger {
+  color: var(--bad);
+  border-color: var(--bad);
+}
+.hud-btn--danger:hover:not(:disabled) {
+  background: var(--bad-bg);
+  border-color: var(--bad);
+}
+.mc-launch {
+  width: 100%;
+  padding: 0.35rem;
+}
+
+/* ---- Top bar: one fixed-height row ---------------------------------------- */
+.hud-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--hud-h);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  padding: 0 var(--s3);
+  background: var(--panel-solid);
+  border-bottom: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  white-space: nowrap;
+  pointer-events: auto;
+  z-index: 20;
+}
+.hud-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+}
+.hud-stat {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+/* The day, the clock and the colonies stay whole; the research line gives way first. */
+.hud-stat.hud-day,
+.hud-stat.hud-clock,
+.hud-stat.hud-colonies {
+  flex-shrink: 0;
+}
+.hud-stat.hud-research {
+  flex-shrink: 3;
+}
+.hud-stat.hud-goal {
+  flex-shrink: 1;
+}
+.hud-clock {
+  flex-shrink: 0;
+}
+.hud-stat.hud-colonies {
+  flex-shrink: 1;
+}
+.hud-stat.hud-research {
+  flex-shrink: 2;
+}
+.hud-stat.hud-goal {
+  flex-shrink: 3;
+}
+.hud-clock {
+  color: var(--accent);
+  font-weight: 600;
+}
+.hud-colonies {
+  color: var(--violet);
+}
+.hud-research,
+.hud-goal {
+  color: var(--muted);
+}
+.hud-speeds {
+  display: flex;
+  gap: var(--s1);
+  flex: 0 0 auto;
+}
+.hud-event {
+  flex: 0 1 14rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--warn);
+  font-weight: 600;
+}
+.hud-event[hidden] {
+  display: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hud-event {
+    animation: hud-pulse 1.6s ease-in-out infinite;
+  }
+}
+@keyframes hud-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+/* Menu: a compact group of small buttons at the right end of the bar. */
+.menu-row {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--s1);
+}
+.menu-row .hud-btn {
+  padding: 0.1rem 0.6rem;
+  font-size: var(--fs-md);
+  white-space: nowrap;
+}
+.menu-row .hud-btn[hidden] {
+  display: none;
+}
+/* Status lines (command refusals, save/load results) are toasts in the free area at the bottom. */
+.hud-status {
+  position: fixed;
+  left: calc(var(--mc-w) + 3 * var(--gap));
+  right: calc(var(--col-w) + 3 * var(--gap));
+  bottom: calc(var(--gap) + 2.75rem);
+  padding: var(--s1) var(--s3);
+  background: var(--panel-solid);
+  border: 1px solid var(--bad);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow);
+  color: var(--bad-soft);
+  font-size: var(--fs-md);
+  white-space: normal;
+  text-align: center;
+  pointer-events: none;
+}
+.hud-status.menu-status {
+  bottom: var(--gap);
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+.hud-status:empty {
+  display: none;
+}
+
+/* ---- Panels ---------------------------------------------------------------- */
+.hud-panel {
+  position: absolute;
+  box-sizing: border-box;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow);
+  padding: var(--s3);
+  pointer-events: auto;
+}
+.hud-title {
+  margin: 0 0 var(--s2);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.hud-body {
+  color: var(--dim);
+}
+/* Collapsible sections (Colonies, Research): the title row is the toggle. */
+details.hud-panel > summary {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+details.hud-panel > summary::-webkit-details-marker {
+  display: none;
+}
+details.hud-panel > summary::before {
+  content: '';
+  flex: 0 0 auto;
+  margin-right: 0.55em;
+  border: 0.32em solid transparent;
+  border-left: 0.5em solid currentColor;
+  border-right-width: 0;
+  transition: transform 0.12s;
+}
+details.hud-panel[open] > summary::before {
+  transform: rotate(90deg);
+}
+details.hud-panel[open] > summary {
+  margin-bottom: var(--s2);
+}
+details.hud-panel > summary:hover {
+  color: var(--text);
+}
+.tech-list {
+  max-height: 46vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* Mission Command (left) */
+.mc-panel {
+  top: calc(var(--hud-h) + var(--gap));
+  left: var(--gap);
+  right: auto;
+  width: var(--mc-w);
+  max-height: calc(100% - var(--hud-h) - 2 * var(--gap));
+  overflow-y: auto;
+  scrollbar-width: thin;
+  overscroll-behavior: contain;
+}
+.mc-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.mc-head .hud-title {
+  margin: 0;
+}
+.mc-card {
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 0.375rem var(--s2);
+  margin: var(--s2) 0;
+}
+.mc-card-title {
+  font-weight: 600;
+}
+.mc-select {
+  width: 100%;
+  margin: var(--s1) 0;
+  background: var(--panel-solid);
+  color: var(--text);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  padding: 0.2rem;
+}
+.mc-dim {
+  color: var(--dim);
+}
+.mc-row {
+  display: grid;
+  grid-template-columns: 4.6rem minmax(0, 1fr);
+  align-items: center;
+  gap: 2px var(--s2);
+  margin: var(--s1) 0;
+}
+.mc-row .mc-value {
+  grid-column: 2;
+  color: var(--dim);
+  font-size: var(--fs-sm);
+}
+.mc-seg {
+  display: flex;
+  flex-wrap: wrap; /* a long label drops to a second row instead of being cut */
+  gap: var(--s1);
+  min-width: 0;
+}
+.mc-seg .hud-btn {
+  flex: 1 1 auto;
+  padding: 0.15rem 0.45rem;
+  line-height: 1.15;
+}
+.mc-range {
+  width: 100%;
+  accent-color: var(--accent);
+}
+.mc-bar {
+  height: 8px;
+  background: var(--line);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  margin-top: var(--s2);
+}
+.mc-bar-fill {
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+}
+.mc-bar-fill.full {
+  background: var(--warn);
+}
+.mc-bar-text {
+  color: var(--dim);
+  font-size: var(--fs-sm);
+  margin-bottom: var(--s1);
+}
+.mc-nums {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px var(--s2);
+  margin: var(--s2) 0;
+}
+.mc-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.mc-num.bad,
+.mc-warn,
+.mc-problem {
+  color: var(--bad);
+}
+.mc-num.good {
+  color: var(--accent);
+}
+.mc-num.ok {
+  color: var(--warn);
+}
+.mc-warn {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.mc-problem {
+  min-height: 1.4em;
+  font-size: var(--fs-sm);
+}
+.mc-key {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* ---- Right column: system, planets, reroute, ships, colonies, research ---- */
+.hud-col-right {
+  position: absolute;
+  top: calc(var(--hud-h) + var(--gap));
+  right: var(--gap);
+  bottom: var(--gap);
+  width: var(--col-w);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  overscroll-behavior: contain;
+  pointer-events: none;
+}
+.hud-col-right .hud-panel {
+  position: static;
+  width: auto;
+  max-height: none;
+  flex: 0 0 auto;
+}
+.hud-col-right .sl-panel {
+  flex: 0 0 auto; /* sized to its content: an empty list is one short line */
+  max-height: 40vh;
+}
+.hud-col-right .rr-panel {
+  max-height: 55%;
+  overflow-y: auto;
+}
+
+.sl-panel {
+  overflow-y: auto;
+}
+.sl-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.sl-head .hud-title {
+  margin: 0 0 6px;
+}
+.sl-table,
+.sl-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sl-row {
+  display: grid;
+  grid-template-columns: 1.1fr 1.1fr 1.7fr 0.9fr 0.8fr 0.7fr;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 3px 6px;
+  text-align: left;
+  font: inherit;
+  font-size: var(--fs-sm);
+  color: var(--text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+}
+button.sl-row {
+  cursor: pointer;
+}
+button.sl-row:hover,
+button.sl-row:focus-visible {
+  border-color: var(--dim);
+}
+.sl-row.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.sl-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sl-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 6px 4px;
+  font-size: var(--fs-xs);
+  color: var(--warn);
+}
+.sl-badge-text {
+  font-weight: 600;
+}
+.sl-open {
+  padding: 2px 8px;
+  font-size: var(--fs-xs);
+}
+.mc-hint {
+  font-size: var(--fs-sm);
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.sl-header {
+  color: var(--dim);
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.sl-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sl-state-transit {
+  color: var(--info);
+}
+.sl-state-event,
+.sl-state-card {
+  color: var(--warn);
+  font-weight: 600;
+}
+.sl-state-drifting,
+.sl-margin-bad {
+  color: var(--bad);
+}
+.sl-margin-bad,
+.sl-state-stranded {
+  font-weight: 600;
+}
+.sl-state-stranded {
+  color: var(--bad);
+}
+.sl-state-arrived {
+  color: var(--muted);
+}
+.sl-state-exploring,
+.sl-state-ground,
+.sl-margin-ok {
+  color: var(--warn);
+}
+.sl-state-orbit {
+  color: var(--violet);
+}
+.sl-margin-good {
+  color: var(--accent);
+}
+
+/* ---- Event card, end screen, error banner ---------------------------------- */
+.ec-dim {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  background: var(--scrim);
+  pointer-events: none;
+}
+.ec-card {
+  position: absolute;
+  z-index: 30;
+  top: calc(var(--hud-h) + var(--s4));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(620px, calc(100% - 24px));
+  max-height: calc(100% - var(--hud-h) - 2 * var(--s4));
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 0.875rem var(--s4);
+  background: var(--panel-solid);
+  border: 1px solid var(--warn);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+  pointer-events: auto;
+}
+.ec-queue {
+  color: var(--warn);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ec-title {
+  margin: var(--s1) 0;
+  font-size: var(--fs-xl);
+}
+.ec-ship {
+  color: var(--dim);
+  font-size: var(--fs-sm);
+}
+.ec-body {
+  margin: var(--s2) 0 var(--s3);
+}
+.ec-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--s2);
+}
+.ec-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s1);
+  padding: var(--s2) 0.625rem;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+.ec-choice:hover:not(:disabled),
+.ec-choice:focus-visible {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.ec-choice:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.ec-choice-top {
+  display: flex;
+  gap: var(--s2);
+  align-items: center;
+}
+.ec-key {
+  display: inline-block;
+  min-width: 18px;
+  text-align: center;
+  font-size: var(--fs-sm);
+  border: 1px solid var(--dim);
+  border-radius: 3px;
+  color: var(--dim);
+}
+.ec-label {
+  font-weight: 600;
+}
+.ec-preview,
+.ec-extra {
+  color: var(--dim);
+  font-size: var(--fs-sm);
+}
+.ec-lines {
+  margin: 0;
+  padding-left: var(--s4);
+  font-size: var(--fs-md);
+}
+.ec-risk {
+  color: var(--warn);
+  font-size: var(--fs-sm);
+}
+.ec-extra.mc-num-bad {
+  color: var(--bad);
+  font-weight: 600;
+}
+.ec-extra.mc-num-ok {
+  color: var(--warn);
+}
+.ec-extra.mc-num-good {
+  color: var(--accent);
+}
+.ec-status {
+  min-height: 1.4em;
+  margin-top: var(--s2);
+  font-size: var(--fs-sm);
+  color: var(--bad-soft);
+}
+.end-card {
+  top: calc(var(--hud-h) + 4.5rem);
+  z-index: 40;
+}
+.end-won {
+  border-color: var(--good);
+}
+.end-lost {
+  border-color: var(--bad);
+}
+.end-score {
+  margin: 0.625rem 0;
+  font-size: var(--fs-xl);
+}
+.err-banner {
+  position: absolute;
+  z-index: 40;
+  top: calc(var(--hud-h) + var(--gap));
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 24px);
+  padding: var(--s2) 0.875rem;
+  background: var(--bad-bg);
+  color: var(--text);
+  border: 1px solid var(--bad);
+  border-radius: var(--r-md);
+  pointer-events: auto;
+}
+
+/* ---- Planet view ------------------------------------------------------------ */
+#planet {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  cursor: grab;
+  background: var(--space);
+}
+#planet:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+/* Galaxy-only panels are hidden while the planet view is open; the bar and event card stay. */
+.planet-mode .hud-col-right:not(.pv-col),
+.planet-mode .mc-panel {
+  display: none;
+}
+.pv-panel {
+  font-size: var(--fs-md);
+}
+.pv-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.pv-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 6px 0;
+  font-size: var(--fs-sm);
+}
+.pv-caption {
+  text-align: left;
+  color: var(--dim);
+  padding-bottom: 2px;
+}
+.pv-th,
+.pv-td {
+  text-align: left;
+  padding: 2px var(--s1);
+  border-bottom: 1px solid var(--line);
+  font-weight: 400;
+}
+.pv-th {
+  color: var(--dim);
+  font-size: var(--fs-xs);
+}
+.pv-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pv-note {
+  color: var(--dim);
+}
+.pv-chance,
+.pv-result,
+.pv-subtitle {
+  font-weight: 600;
+  margin-top: var(--s1);
+}
+.pv-preview {
+  margin-top: 6px;
+  padding-top: var(--s1);
+  border-top: 1px solid var(--line);
+}
+.pv-good {
+  color: var(--accent);
+}
+.pv-good::before {
+  content: 'OK: ';
+}
+.pv-bad {
+  color: var(--bad-soft);
+}
+.pv-bad::before {
+  content: 'BAD: ';
+}
+.pv-banner {
+  margin: 6px 0;
+  padding: var(--s1) 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+.pv-banner.disp-1 {
+  border-color: var(--accent);
+}
+.pv-banner.disp-2 {
+  border-color: var(--warn);
+}
+.pv-banner.disp-3 {
+  border-color: var(--bad);
+  color: var(--bad-soft);
+}
+.pv-food.food-LOW {
+  color: var(--bad-soft);
+}
+.pv-food.food-OK {
+  color: var(--warn);
+}
+.pv-food.food-GOOD {
+  color: var(--accent);
+}
+.pv-shipfood {
+  margin-top: var(--s1);
+}
+.pv-list,
+.pv-planets,
+.pv-tiers {
+  list-style: none;
+  margin: var(--s1) 0 0;
+  padding: 0;
+}
+.pv-list {
+  max-height: 30vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.pv-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  padding: 2px 6px;
+  font: inherit;
+  cursor: pointer;
+}
+.pv-item:hover {
+  background: var(--panel-hover);
+}
+.pv-item.selected {
+  border-color: var(--accent);
+}
+.pv-item.pv-unknown {
+  color: var(--dim);
+}
+.pv-item.pv-native::after {
+  content: ' (natives)';
+  color: var(--warn);
+}
+.pv-planet,
+.pv-tier {
+  padding: var(--s1) 0;
+  border-bottom: 1px solid var(--line);
+}
+.pv-planet--sel {
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent);
+  padding-left: var(--s2);
+}
+/* Colony close-up grade over the planet canvas: only its opacity changes (src/render/zoomFx.ts). */
+.zoom-fx {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(ellipse at 50% 50%, transparent 46%, var(--vignette) 100%),
+    linear-gradient(
+      to bottom,
+      var(--vignette-band) 0%,
+      transparent 16%,
+      transparent 84%,
+      var(--vignette-band) 100%
+    ),
+    linear-gradient(var(--grade), var(--grade));
+}
+.pv-tier-failed {
+  color: var(--bad-soft);
+}
+.pv-tier-thriving {
+  color: var(--accent);
+}
+.pv-colony.tier-Struggling {
+  color: var(--warn);
+}
+.pv-colony.tier-Thriving {
+  color: var(--accent);
+}
+.pv-check {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.pv-tooltip {
+  position: fixed;
+  z-index: 20;
+  max-width: 260px;
+  padding: var(--s1) var(--s2);
+  background: var(--panel-solid);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow);
+  pointer-events: none;
+  font-size: var(--fs-sm);
+}
+/* The hidden attribute must win over any display rule of the planet UI (empty buttons leaked). */
+.pv-col [hidden],
+.pv-panel [hidden],
+.pv-tooltip[hidden] {
+  display: none !important;
+}
+
+/* ---- Colony panel, tech panel, menu ------------------------------------------ */
+.col-panel,
+.tech-panel,
+.menu-panel {
+  font-size: var(--fs-md);
+}
+.col-tabs,
+.col-sites,
+.col-build {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1);
+  margin: var(--s1) 0;
+}
+.col-sites {
+  flex-direction: column;
+  align-items: stretch;
+}
+.col-site {
+  text-align: left;
+}
+.col-sub {
+  margin: var(--s2) 0 2px;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+.col-line {
+  margin: 2px 0;
+}
+.col-buildline {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+}
+.col-detail {
+  font-size: var(--fs-sm);
+}
+.tech-row {
+  padding: var(--s1) 0;
+  border-top: 1px solid var(--line);
+}
+.tech-known .tech-head {
+  color: var(--good);
+}
+.tech-current .tech-head {
+  color: var(--warn);
+}
+.tech-locked {
+  opacity: 0.6;
+}
+
+/* ---- Narrow screens: one column, panels stacked, nothing overlaps ------------- */
+@media (max-width: 800px) {
+  :root {
+    --hud-h: 5.25rem;
+  }
+  #hud {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    box-sizing: border-box;
+    padding: calc(var(--hud-h) + var(--gap)) var(--gap) var(--gap);
+    overflow-y: auto;
+  }
+  .hud-bar {
+    height: auto;
+    min-height: 3.5rem;
+    flex-wrap: wrap;
+    gap: var(--s1) var(--s3);
+    padding: var(--s1) var(--s3);
+  }
+  .hud-stats {
+    flex: 1 1 100%;
+  }
+  .hud-status {
+    left: var(--gap);
+    right: var(--gap);
+  }
+  .mc-panel,
+  .hud-col-right {
+    position: static;
+    width: auto;
+    max-height: none;
+    flex: 0 0 auto;
+  }
+  .hud-col-right {
+    overflow: visible;
+  }
+  .hud-col-right .sl-panel {
+    flex: 0 0 auto;
+    max-height: 40vh;
+    overflow-y: auto;
+  }
+  .hud-col-right .rr-panel {
+    max-height: none;
+  }
+  .pv-col {
+    overflow: visible;
+  }
+  .pv-list {
+    max-height: 24vh;
+  }
+  .ec-card {
+    top: calc(var(--hud-h) + var(--gap));
+    left: var(--gap);
+    right: var(--gap);
+    width: auto;
+    transform: none;
+    max-height: calc(100% - var(--hud-h) - 2 * var(--gap));
+    padding: 0.625rem var(--s3);
+  }
+  .ec-choices {
+    grid-template-columns: 1fr;
+  }
+  .ec-title {
+    font-size: var(--fs-lg);
+  }
+  .err-banner {
+    top: calc(var(--hud-h) + var(--gap));
+  }
+}
+
+/* ---- Guide: coach-mark card and highlight ring (M7c) ------------------------ */
+.tut-coach {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--gap) + 3.5rem);
+  transform: translateX(-50%);
+  z-index: 25;
+  box-sizing: border-box;
+  width: min(26rem, calc(100vw - 2 * var(--gap)));
+  padding: var(--s3);
+  background: var(--panel-solid);
+  border: 1px solid var(--accent);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  pointer-events: auto;
+}
+.tut-coach[hidden] {
+  display: none;
+}
+.tut-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--s2);
+  font-size: var(--fs-xs);
+  color: var(--dim);
+}
+.tut-title {
+  margin: var(--s1) 0;
+  font-size: var(--fs-lg);
+  color: var(--accent);
+}
+.tut-text {
+  margin: 0 0 var(--s2);
+  font-size: var(--fs-md);
+  line-height: 1.4;
+}
+.tut-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s2);
+}
+.tut-focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tut-focus {
+    animation: tut-ring 1.8s ease-in-out infinite;
+  }
+}
+@keyframes tut-ring {
+  50% {
+    outline-color: var(--info);
+  }
+}
+
+/* Visually hidden text that assistive technology still reads (help notes for aria-describedby). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ==========================================================================
+   M8: accessibility, settings dialog, menu list, status icons
+   ========================================================================== */
+.skip-link {
+  position: fixed;
+  top: var(--s2);
+  left: var(--s2);
+  z-index: 100;
+  padding: var(--s2) var(--s3);
+  background: var(--panel-solid);
+  color: var(--text);
+  border: 2px solid var(--focus);
+  border-radius: var(--r-md);
+  transform: translateY(-300%);
+  pointer-events: auto;
+}
+.skip-link:focus {
+  transform: none;
+}
+#main-content:focus {
+  outline: none;
+}
+/* Menu list under the bar: Save and Load stay in the bar, the rest opens here. */
+.menu-pop {
+  position: fixed;
+  top: calc(var(--hud-h) + var(--s1));
+  right: var(--gap);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  min-width: 12rem;
+  max-width: calc(100% - 2 * var(--gap));
+  box-sizing: border-box;
+  padding: var(--s2);
+  background: var(--panel-solid);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow);
+  pointer-events: auto;
+}
+.menu-pop .hud-btn {
+  text-align: left;
+}
+.menu-toggle[aria-expanded='true'] {
+  border-color: var(--accent);
+}
+/* Settings dialog */
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--gap);
+  box-sizing: border-box;
+  background: var(--scrim);
+  pointer-events: auto;
+}
+.settings-dialog {
+  box-sizing: border-box;
+  width: min(36rem, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: var(--s4);
+  background: var(--panel-solid);
+  color: var(--text);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+}
+.settings-head,
+.settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+.settings-group {
+  margin: var(--s3) 0 0;
+  padding: var(--s2) var(--s3) var(--s3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  min-width: 0;
+}
+.settings-legend {
+  padding: 0 var(--s1);
+  color: var(--dim);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.settings-row {
+  display: grid;
+  grid-template-columns: minmax(6rem, 9rem) minmax(0, 1fr) 3.5rem;
+  align-items: center;
+  gap: var(--s2);
+  margin: var(--s2) 0;
+}
+.settings-row .settings-select {
+  grid-column: 2 / 4;
+  margin: 0;
+}
+.settings-row.settings-check {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+.settings-range {
+  width: 100%;
+  min-width: 0;
+}
+.settings-out {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.settings-note {
+  margin: var(--s1) 0;
+  font-size: var(--fs-sm);
+}
+.settings-log {
+  margin: var(--s2) 0;
+  max-height: 10rem;
+  overflow: auto;
+  padding: var(--s2);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font:
+    var(--fs-sm) / 1.4 ui-monospace,
+    Menlo,
+    Consolas,
+    monospace;
+}
+.settings-foot {
+  margin-top: var(--s3);
+}
+/* Status icons: a symbol before the word, so no status rests on colour alone. */
+.mc-num.good::before,
+.sl-margin-good::before,
+.ec-extra.mc-num-good::before,
+.pv-food.food-GOOD::before,
+.pv-colony.tier-Thriving::before,
+.pv-tier-thriving::before,
+.pv-banner.disp-1::before {
+  content: '\2713\00a0';
+}
+.mc-num.ok::before,
+.sl-margin-ok::before,
+.ec-extra.mc-num-ok::before,
+.pv-food.food-OK::before,
+.pv-colony.tier-Struggling::before,
+.pv-tier-struggling::before,
+.pv-banner.disp-2::before {
+  content: '\25C6\00a0';
+}
+.mc-num.bad::before,
+.sl-margin-bad::before,
+.ec-extra.mc-num-bad::before,
+.pv-food.food-LOW::before,
+.pv-tier-failed::before,
+.pv-colony.tier-Failed::before,
+.pv-banner.disp-3::before {
+  content: '\2715\00a0';
+}
+.pv-item.pv-explored::before {
+  content: '\25A0\00a0';
+}
+.pv-item.pv-seen::before {
+  content: '\25D0\00a0';
+}
+.pv-item.pv-unknown::before {
+  content: '\25CC\00a0';
+}

@@ -1,0 +1,53 @@
+{
+  "_note": "PLACEHOLDER numbers (see docs/BALANCE.md). Tune here, never in code. Dial values are integer steps; a step costs cargoPerStep cargo and carries amountPerStep of the resource.",
+  "cargoDials": [
+    {
+      "id": "passengers",
+      "name": "Passengers",
+      "cargoPerStep": 1,
+      "amountPerStep": 20,
+      "productionPerStep": 0
+    },
+    {
+      "id": "supplies",
+      "name": "Supplies",
+      "cargoPerStep": 1,
+      "amountPerStep": 500,
+      "productionPerStep": 0
+    },
+    {
+      "id": "fuel",
+      "name": "Fuel",
+      "cargoPerStep": 1,
+      "amountPerStep": 100,
+      "productionPerStep": 0
+    },
+    {
+      "id": "kit",
+      "name": "Survey kit",
+      "cargoPerStep": 2,
+      "amountPerStep": 1,
+      "productionPerStep": 5
+    },
+    {
+      "id": "security",
+      "name": "Security",
+      "cargoPerStep": 1,
+      "amountPerStep": 1,
+      "productionPerStep": 3
+    }
+  ],
+  "burnPerUnitX100": 500,
+  "supplyMarginCapPct": 999,
+  "founding": {
+    "siteQualityBands": [
+      [60, 100],
+      [65, 98],
+      [65, 96],
+      [80, 95]
+    ],
+    "delayAllowancePct": 30,
+    "kitBasePct": 90,
+    "kitSaturationSteps": 10
+  }
+}

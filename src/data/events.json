@@ -1,0 +1,1077 @@
+{
+  "_note": "Starter transit cards from GAME_DESIGN section 5. Amounts are flat units or a percent of what the ship holds. delayDays: the ship stands still, supplies still burn. detourDays: the same plus the fuel the lost distance would have burned. PLACEHOLDER numbers (see docs/BALANCE.md). M4 adds Exploration and NativeContact cards: their effects act on the expedition (colonists = explorers, supplies = expedition supplies, delayDays = days standing still, revealRegion = one frontier region explored, nativeMood = natives calmer or angrier). Trigger terrain / native narrow when a card can come up. M7a adds 6 Transit, 6 Exploration and 3 NativeContact cards (30 in all); a NativeContact card may also name trigger.variant (a native variant id in planetfall.json).",
+  "events": [
+    {
+      "id": "micrometeor_storm",
+      "scenes": ["Transit"],
+      "trigger": {
+        "shipState": "Cruising"
+      },
+      "weight": 10,
+      "cooldownDays": 15,
+      "title": "Micrometeor storm",
+      "body": "A dense cloud of debris lies across the route. The hull can take it, or we can go around.",
+      "choices": [
+        {
+          "label": "Push through",
+          "preview": "Hull damage, no delay.",
+          "outcomes": {
+            "hullPct": -15
+          }
+        },
+        {
+          "label": "Detour",
+          "preview": "Extra days and extra fuel burned.",
+          "outcomes": {
+            "detourDays": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "illness_outbreak",
+      "scenes": ["Transit"],
+      "trigger": {
+        "shipState": "Cruising"
+      },
+      "weight": 10,
+      "cooldownDays": 20,
+      "title": "Illness outbreak",
+      "body": "Fever is spreading through the passenger decks. The medical stores are limited.",
+      "choices": [
+        {
+          "label": "Use medical supplies",
+          "preview": "Medical supplies used, nobody lost.",
+          "outcomes": {
+            "supplies": {
+              "pct": -10
+            }
+          }
+        },
+        {
+          "label": "Quarantine",
+          "preview": "A few colonists lost, supplies untouched.",
+          "outcomes": {
+            "colonists": {
+              "pct": -3
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "engine_fault",
+      "scenes": ["Transit"],
+      "trigger": {
+        "shipState": "Cruising"
+      },
+      "weight": 10,
+      "cooldownDays": 20,
+      "title": "Engine fault",
+      "body": "A coolant line has failed in the main drive. Engineers can fix it while we drift, or we can run degraded.",
+      "choices": [
+        {
+          "label": "Repair",
+          "preview": "Days lost, supplies keep burning.",
+          "outcomes": {
+            "delayDays": 5
+          }
+        },
+        {
+          "label": "Limp on",
+          "preview": "Speed drops a level and some days are lost.",
+          "outcomes": {
+            "speedDrop": 1,
+            "delayDays": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "derelict_ship",
+      "scenes": ["Transit"],
+      "trigger": {
+        "shipState": "Cruising"
+      },
+      "weight": 6,
+      "cooldownDays": 30,
+      "title": "Derelict ship found",
+      "body": "A dead vessel drifts off the route, its tanks possibly full. It could also be a trap.",
+      "choices": [
+        {
+          "label": "Salvage",
+          "preview": "Fuel gained, with a shown chance of a trap that hurts hull and colonists.",
+          "outcomes": {
+            "fuel": {
+              "flat": 300
+            }
+          },
+          "risk": {
+            "oddsPct": 25,
+            "label": "Trap",
+            "outcomes": {
+              "hullPct": -20,
+              "colonists": {
+                "pct": -2
+              }
+            }
+          }
+        },
+        {
+          "label": "Ignore",
+          "preview": "Nothing gained, nothing lost.",
+          "outcomes": {}
+        }
+      ]
+    },
+    {
+      "id": "stowaways",
+      "scenes": ["Transit"],
+      "trigger": {
+        "shipState": "Cruising"
+      },
+      "weight": 8,
+      "cooldownDays": 30,
+      "title": "Stowaways",
+      "body": "Twelve people are found hidden in the cargo hold. They are hungry and asking to stay.",
+      "choices": [
+        {
+          "label": "Take them",
+          "preview": "More colonists, fewer supplies.",
+          "outcomes": {
+            "colonists": {
+              "flat": 12
+            },
+            "supplies": {
+              "pct": -5
+            }
+          }
+        },
+        {
+          "label": "Leave at nearest colony",
+          "preview": "A short detour and extra fuel burned.",
+          "outcomes": {
+            "detourDays": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "strange_signal",
+      "scenes": ["Transit"],
+      "trigger": {
+        "shipState": "Cruising"
+      },
+      "weight": 6,
+      "cooldownDays": 30,
+      "title": "Strange signal",
+      "body": "The long-range array picks up a repeating pulse from a nearby star.",
+      "choices": [
+        {
+          "label": "Investigate",
+          "preview": "A few days lost, a nearby planet is scanned.",
+          "outcomes": {
+            "delayDays": 2,
+            "revealPlanet": 1
+          }
+        },
+        {
+          "label": "Stay on course",
+          "preview": "No delay, no cost.",
+          "outcomes": {}
+        }
+      ]
+    },
+    {
+      "id": "ancient_vault",
+      "scenes": ["Exploration"],
+      "trigger": {
+        "terrain": "Ruins"
+      },
+      "weight": 14,
+      "cooldownDays": 40,
+      "title": "Sealed vault",
+      "body": "Behind a collapsed arch the team finds a vault that hums faintly. It may hold something useful, or be unsafe.",
+      "choices": [
+        {
+          "label": "Break it open",
+          "preview": "A new region is revealed, with a shown chance the vault collapses and explorers are lost.",
+          "outcomes": {
+            "revealRegion": 1
+          },
+          "risk": {
+            "oddsPct": 30,
+            "label": "Collapse",
+            "outcomes": {
+              "colonists": {
+                "pct": -5
+              }
+            }
+          }
+        },
+        {
+          "label": "Seal and move on",
+          "preview": "Nothing gained, nothing lost.",
+          "outcomes": {}
+        }
+      ]
+    },
+    {
+      "id": "strange_lights",
+      "scenes": ["Exploration"],
+      "trigger": {},
+      "weight": 10,
+      "cooldownDays": 40,
+      "title": "Strange lights",
+      "body": "Pale lights drift over the next ridge at night. Nobody can say whether they are alive.",
+      "choices": [
+        {
+          "label": "Follow them",
+          "preview": "Days lost, and a new region is revealed.",
+          "outcomes": {
+            "delayDays": 2,
+            "revealRegion": 1
+          }
+        },
+        {
+          "label": "Hold position",
+          "preview": "Nothing gained, nothing lost.",
+          "outcomes": {}
+        }
+      ]
+    },
+    {
+      "id": "spoiled_stores",
+      "scenes": ["Exploration"],
+      "trigger": {},
+      "weight": 10,
+      "cooldownDays": 40,
+      "title": "Spoiled stores",
+      "body": "Damp has got into part of the stores. Some of it can be saved, if there is time.",
+      "choices": [
+        {
+          "label": "Sort the stores",
+          "preview": "Days lost and some supplies lost.",
+          "outcomes": {
+            "delayDays": 2,
+            "supplies": {
+              "pct": -5
+            }
+          }
+        },
+        {
+          "label": "Discard and go",
+          "preview": "More supplies lost, no delay.",
+          "outcomes": {
+            "supplies": {
+              "pct": -15
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "sinkhole",
+      "scenes": ["Exploration"],
+      "trigger": {
+        "terrain": "Highlands"
+      },
+      "weight": 10,
+      "cooldownDays": 40,
+      "title": "Sinkhole",
+      "body": "The ground gives way under the rear of the column. Several people are trapped below.",
+      "choices": [
+        {
+          "label": "Dig them out",
+          "preview": "Days lost, supplies spent on the rescue.",
+          "outcomes": {
+            "delayDays": 3,
+            "supplies": {
+              "pct": -5
+            }
+          }
+        },
+        {
+          "label": "Press on",
+          "preview": "Explorers are lost, no delay.",
+          "outcomes": {
+            "colonists": {
+              "pct": -5
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "fever_camp",
+      "scenes": ["Exploration"],
+      "trigger": {
+        "terrain": "Jungle"
+      },
+      "weight": 10,
+      "cooldownDays": 40,
+      "title": "Fever in camp",
+      "body": "Fever spreads through the camp after a night in the wet forest.",
+      "choices": [
+        {
+          "label": "Treat the sick",
+          "preview": "Medical supplies spent, nobody lost.",
+          "outcomes": {
+            "supplies": {
+              "pct": -12
+            }
+          }
+        },
+        {
+          "label": "Push on",
+          "preview": "A few explorers lost, supplies untouched.",
+          "outcomes": {
+            "colonists": {
+              "pct": -4
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "fresh_spring",
+      "scenes": ["Exploration"],
+      "trigger": {
+        "terrain": "Plains"
+      },
+      "weight": 10,
+      "cooldownDays": 40,
+      "title": "Fresh spring",
+      "body": "A clean spring runs beside the route, good for a long rest and for refilling the casks.",
+      "choices": [
+        {
+          "label": "Rest and refill",
+          "preview": "Days lost eating supplies, then supplies gained.",
+          "outcomes": {
+            "delayDays": 3,
+            "supplies": {
+              "pct": 15
+            }
+          }
+        },
+        {
+          "label": "Mark and move on",
+          "preview": "Nothing gained, nothing lost.",
+          "outcomes": {}
+        }
+      ]
+    },
+    {
+      "id": "guides_offered",
+      "scenes": ["NativeContact"],
+      "trigger": {
+        "native": "Peaceful"
+      },
+      "weight": 10,
+      "cooldownDays": 0,
+      "title": "Guides offered",
+      "body": "Villagers meet the team at the edge of their fields. Several offer to guide us across their land.",
+      "choices": [
+        {
+          "label": "Accept guides",
+          "preview": "Days lost and supplies spent as thanks, a new region revealed.",
+          "outcomes": {
+            "delayDays": 2,
+            "supplies": {
+              "pct": -5
+            },
+            "revealRegion": 1
+          }
+        },
+        {
+          "label": "Decline politely",
+          "preview": "Nothing gained, nothing lost.",
+          "outcomes": {}
+        }
+      ]
+    },
+    {
+      "id": "wary_watchers",
+      "scenes": ["NativeContact"],
+      "trigger": {
+        "native": "Wary"
+      },
+      "weight": 10,
+      "cooldownDays": 0,
+      "title": "Watchers on the ridge",
+      "body": "Figures watch from the ridge and keep their distance. Their spears are lowered, for now.",
+      "choices": [
+        {
+          "label": "Offer gifts",
+          "preview": "Supplies spent, with a shown chance the natives grow calmer.",
+          "outcomes": {
+            "supplies": {
+              "pct": -10
+            }
+          },
+          "risk": {
+            "oddsPct": 50,
+            "label": "Natives calmer",
+            "outcomes": {
+              "nativeMood": -1
+            }
+          }
+        },
+        {
+          "label": "Show strength",
+          "preview": "Free, with a chance the natives grow angrier that rises with the escort.",
+          "outcomes": {},
+          "risk": {
+            "oddsPct": 15,
+            "securityOddsPerGuard": 3,
+            "label": "Natives angrier",
+            "outcomes": {
+              "nativeMood": 1
+            }
+          }
+        },
+        {
+          "label": "Withdraw",
+          "preview": "Days lost, natives left as they are.",
+          "outcomes": {
+            "delayDays": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "hostile_warband",
+      "scenes": ["NativeContact"],
+      "trigger": {
+        "native": "Hostile"
+      },
+      "weight": 10,
+      "cooldownDays": 0,
+      "title": "Warband in the pass",
+      "body": "A warband blocks the pass. They have not attacked yet, and they have not stepped aside.",
+      "choices": [
+        {
+          "label": "Stand firm",
+          "preview": "Free, with a shown chance of a clash that costs explorers and falls with the escort.",
+          "outcomes": {},
+          "risk": {
+            "oddsPct": 60,
+            "securityOddsPerGuard": -4,
+            "label": "Clash",
+            "outcomes": {
+              "colonists": {
+                "pct": -8
+              }
+            }
+          }
+        },
+        {
+          "label": "Parley",
+          "preview": "Supplies spent, with a shown chance the natives grow calmer.",
+          "outcomes": {
+            "supplies": {
+              "pct": -15
+            }
+          },
+          "risk": {
+            "oddsPct": 25,
+            "label": "Natives calmer",
+            "outcomes": {
+              "nativeMood": -1
+            }
+          }
+        },
+        {
+          "label": "Retreat",
+          "preview": "Days lost, natives left as they are.",
+          "outcomes": {
+            "delayDays": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "solar_flare",
+      "scenes": ["Transit"],
+      "trigger": {
+        "shipState": "Cruising"
+      },
+      "weight": 8,
+      "cooldownDays": 30,
+      "title": "Solar flare",
+      "body": "A flare is climbing the star's limb and the radiation alarm has sounded. Shelter costs time; running ahead of it risks the passenger decks.",
+      "choices": [
+        {
+          "label": "Shelter in the core",
+          "preview": "Days lost while the flare passes, nobody hurt.",
+          "outcomes": {
+            "delayDays": 3
+          }
+        },
+        {
+          "label": "Run ahead",
+          "preview": "No delay, with a shown chance of hull damage and colonists lost.",
+          "outcomes": {},
+          "risk": {
+            "oddsPct": 40,
+            "label": "Radiation burn",
+            "outcomes": {
+              "hullPct": -10,
+              "colonists": {
+                "pct": -2
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "recycler_failure",
+      "scenes": ["Transit"],
+      "trigger": {
+        "shipState": "Cruising"
+      },
+      "weight": 8,
+      "cooldownDays": 25,
+      "title": "Recycler failure",
+      "body": "The water recycler has failed on the lower decks. Spare parts exist, but only by stripping other stores.",
+      "choices": [
+        {
+          "label": "Strip the stores",
+          "preview": "Supplies lost, nobody hurt.",
+          "outcomes": {
+            "supplies": {
+              "pct": -8
+            }
+          }
+        },
+        {
+          "label": "Ration water",
+          "preview": "Colonists lost to thirst and sickness, supplies kept.",
+          "outcomes": {
+            "colonists": {
+              "pct": -2
+            }
+          }
+        },
+        {
+          "label": "Repair slowly",
+          "preview": "Days lost while the line is rebuilt.",
+          "outcomes": {
+            "delayDays": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "deck_unrest",
+      "scenes": ["Transit"],
+      "trigger": {
+        "shipState": "Cruising"
+      },
+      "weight": 6,
+      "cooldownDays": 40,
+      "title": "Unrest on the decks",
+      "body": "Crowded decks and short tempers have led to a fight in the mess hall. The council asks for a ruling.",
+      "choices": [
+        {
+          "label": "Hold an assembly",
+          "preview": "Days lost, calm restored.",
+          "outcomes": {
+            "delayDays": 2
+          }
+        },
+        {
+          "label": "Extra rations",
+          "preview": "Supplies spent to ease tempers.",
+          "outcomes": {
+            "supplies": {
+              "pct": -6
+            }
+          }
+        },
+        {
+          "label": "Tighten order",
+          "preview": "No delay, with a shown chance some colonists are lost.",
+          "outcomes": {},
+          "risk": {
+            "oddsPct": 30,
+            "label": "Colonists lost",
+            "outcomes": {
+              "colonists": {
+                "pct": -2
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "comet_tail",
+      "scenes": ["Transit"],
+      "trigger": {
+        "shipState": "Cruising"
+      },
+      "weight": 8,
+      "cooldownDays": 30,
+      "title": "Comet tail",
+      "body": "A comet's tail crosses the route, thick with ice and dust. Scooping it could refill the water tanks.",
+      "choices": [
+        {
+          "label": "Scoop the ice",
+          "preview": "Supplies gained, with a shown chance the dust damages the hull.",
+          "outcomes": {
+            "supplies": {
+              "pct": 10
+            }
+          },
+          "risk": {
+            "oddsPct": 25,
+            "label": "Dust damage",
+            "outcomes": {
+              "hullPct": -10
+            }
+          }
+        },
+        {
+          "label": "Keep clear",
+          "preview": "Nothing gained, nothing lost.",
+          "outcomes": {}
+        }
+      ]
+    },
+    {
+      "id": "passing_convoy",
+      "scenes": ["Transit"],
+      "trigger": {
+        "shipState": "Cruising"
+      },
+      "weight": 6,
+      "cooldownDays": 40,
+      "title": "Passing convoy",
+      "body": "A freight convoy hails the ship on the long-range band. Their holds are full and they are willing to trade.",
+      "choices": [
+        {
+          "label": "Buy fuel",
+          "preview": "Supplies spent, fuel gained.",
+          "outcomes": {
+            "supplies": {
+              "pct": -10
+            },
+            "fuel": {
+              "flat": 200
+            }
+          }
+        },
+        {
+          "label": "Buy provisions",
+          "preview": "Fuel spent, supplies gained.",
+          "outcomes": {
+            "fuel": {
+              "flat": -150
+            },
+            "supplies": {
+              "pct": 15
+            }
+          }
+        },
+        {
+          "label": "Decline",
+          "preview": "Nothing gained, nothing lost.",
+          "outcomes": {}
+        }
+      ]
+    },
+    {
+      "id": "navigation_drift",
+      "scenes": ["Transit"],
+      "trigger": {
+        "shipState": "Cruising"
+      },
+      "weight": 8,
+      "cooldownDays": 30,
+      "title": "Navigation drift",
+      "body": "The star tracker disagrees with the inertial log, and the error grows by the hour.",
+      "choices": [
+        {
+          "label": "Recalibrate",
+          "preview": "Days lost while the instruments are checked.",
+          "outcomes": {
+            "delayDays": 3
+          }
+        },
+        {
+          "label": "Steer by eye",
+          "preview": "No delay, with a shown chance the error costs days.",
+          "outcomes": {},
+          "risk": {
+            "oddsPct": 35,
+            "label": "Off course",
+            "outcomes": {
+              "delayDays": 6
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "whiteout",
+      "scenes": ["Exploration"],
+      "trigger": {
+        "terrain": "Ice"
+      },
+      "weight": 10,
+      "cooldownDays": 40,
+      "title": "Whiteout",
+      "body": "A whiteout closes over the column. Visibility drops to arm's length and the cold seeps through the tents.",
+      "choices": [
+        {
+          "label": "Dig in and wait",
+          "preview": "Days lost, supplies burned for warmth.",
+          "outcomes": {
+            "delayDays": 3,
+            "supplies": {
+              "pct": -5
+            }
+          }
+        },
+        {
+          "label": "March blind",
+          "preview": "No delay, with a shown chance explorers are lost in the snow.",
+          "outcomes": {},
+          "risk": {
+            "oddsPct": 35,
+            "label": "Lost in the snow",
+            "outcomes": {
+              "colonists": {
+                "pct": -4
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "unstable_rim",
+      "scenes": ["Exploration"],
+      "trigger": {
+        "terrain": "Crater"
+      },
+      "weight": 10,
+      "cooldownDays": 40,
+      "title": "Unstable rim",
+      "body": "The crater rim crumbles under the column. Packs are sliding toward the floor of the bowl.",
+      "choices": [
+        {
+          "label": "Recover the gear",
+          "preview": "Days lost and a few explorers may be lost.",
+          "outcomes": {
+            "delayDays": 2,
+            "colonists": {
+              "pct": -3
+            }
+          }
+        },
+        {
+          "label": "Abandon it",
+          "preview": "Supplies lost, no delay.",
+          "outcomes": {
+            "supplies": {
+              "pct": -12
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "carved_stair",
+      "scenes": ["Exploration"],
+      "trigger": {
+        "terrain": "Ruins"
+      },
+      "weight": 10,
+      "cooldownDays": 40,
+      "title": "Carved stair",
+      "body": "A stair cut into the rock leads down past the survey line. The steps are worn smooth and the air below is dry.",
+      "choices": [
+        {
+          "label": "Descend",
+          "preview": "Days lost and a new region revealed, with a shown chance explorers fall.",
+          "outcomes": {
+            "delayDays": 2,
+            "revealRegion": 1
+          },
+          "risk": {
+            "oddsPct": 20,
+            "label": "Fall",
+            "outcomes": {
+              "colonists": {
+                "pct": -4
+              }
+            }
+          }
+        },
+        {
+          "label": "Send a rope team",
+          "preview": "Supplies spent, a new region revealed, no risk.",
+          "outcomes": {
+            "supplies": {
+              "pct": -8
+            },
+            "revealRegion": 1
+          }
+        },
+        {
+          "label": "Mark and move on",
+          "preview": "Nothing gained, nothing lost.",
+          "outcomes": {}
+        }
+      ]
+    },
+    {
+      "id": "fruiting_grove",
+      "scenes": ["Exploration"],
+      "trigger": {
+        "terrain": "Jungle"
+      },
+      "weight": 10,
+      "cooldownDays": 40,
+      "title": "Fruiting grove",
+      "body": "Heavy fruit hangs over the trail. Nobody knows what is safe to eat, and the team is hungry.",
+      "choices": [
+        {
+          "label": "Gather and eat",
+          "preview": "Supplies gained, with a shown chance explorers fall sick.",
+          "outcomes": {
+            "supplies": {
+              "pct": 12
+            }
+          },
+          "risk": {
+            "oddsPct": 30,
+            "label": "Sickness",
+            "outcomes": {
+              "colonists": {
+                "pct": -4
+              }
+            }
+          }
+        },
+        {
+          "label": "Test first",
+          "preview": "Days lost, fewer supplies gained, nobody sick.",
+          "outcomes": {
+            "delayDays": 2,
+            "supplies": {
+              "pct": 8
+            }
+          }
+        },
+        {
+          "label": "Leave it",
+          "preview": "Nothing gained, nothing lost.",
+          "outcomes": {}
+        }
+      ]
+    },
+    {
+      "id": "ridge_gale",
+      "scenes": ["Exploration"],
+      "trigger": {
+        "terrain": "Highlands"
+      },
+      "weight": 10,
+      "cooldownDays": 40,
+      "title": "Ridge gale",
+      "body": "A gale sweeps the ridge line and tears at the tents. The next shelter is a day's march off.",
+      "choices": [
+        {
+          "label": "Shelter below",
+          "preview": "Days lost, supplies unharmed.",
+          "outcomes": {
+            "delayDays": 2
+          }
+        },
+        {
+          "label": "Cross the ridge",
+          "preview": "Supplies lost to the wind, with a shown chance explorers may be lost.",
+          "outcomes": {
+            "supplies": {
+              "pct": -6
+            }
+          },
+          "risk": {
+            "oddsPct": 25,
+            "label": "Fall",
+            "outcomes": {
+              "colonists": {
+                "pct": -3
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "lost_trail",
+      "scenes": ["Exploration"],
+      "trigger": {},
+      "weight": 10,
+      "cooldownDays": 40,
+      "title": "Lost trail",
+      "body": "The trail markers end at a dry streambed. Both paths lead on, and the map shows neither.",
+      "choices": [
+        {
+          "label": "Scout both paths",
+          "preview": "Days lost and a new region revealed.",
+          "outcomes": {
+            "delayDays": 3,
+            "revealRegion": 1
+          }
+        },
+        {
+          "label": "Pick a path",
+          "preview": "No delay, with a shown chance of a wasted march that costs days and supplies.",
+          "outcomes": {},
+          "risk": {
+            "oddsPct": 40,
+            "label": "Wrong path",
+            "outcomes": {
+              "delayDays": 4,
+              "supplies": {
+                "pct": -4
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "traders_ford",
+      "scenes": ["NativeContact"],
+      "trigger": {
+        "native": "Peaceful",
+        "variant": "traders"
+      },
+      "weight": 20,
+      "cooldownDays": 0,
+      "title": "Traders at the ford",
+      "body": "Traders wait at the ford with grain and hand-drawn maps. They are willing to deal.",
+      "choices": [
+        {
+          "label": "Buy a map",
+          "preview": "Supplies spent, a new region revealed.",
+          "outcomes": {
+            "supplies": {
+              "pct": -8
+            },
+            "revealRegion": 1
+          }
+        },
+        {
+          "label": "Buy grain",
+          "preview": "Days lost haggling, supplies gained.",
+          "outcomes": {
+            "delayDays": 2,
+            "supplies": {
+              "pct": 12
+            }
+          }
+        },
+        {
+          "label": "Decline politely",
+          "preview": "Nothing gained, nothing lost.",
+          "outcomes": {}
+        }
+      ]
+    },
+    {
+      "id": "herders_trail",
+      "scenes": ["NativeContact"],
+      "trigger": {
+        "native": "Wary",
+        "variant": "herders"
+      },
+      "weight": 20,
+      "cooldownDays": 0,
+      "title": "Herders on the trail",
+      "body": "A large herd fills the trail, watched by herders who keep their hands on their staffs. They want the team to wait or pay.",
+      "choices": [
+        {
+          "label": "Pay the toll",
+          "preview": "Supplies spent, natives left as they are.",
+          "outcomes": {
+            "supplies": {
+              "pct": -10
+            }
+          }
+        },
+        {
+          "label": "Wait them out",
+          "preview": "Days lost, natives left as they are.",
+          "outcomes": {
+            "delayDays": 3
+          }
+        },
+        {
+          "label": "Drive through",
+          "preview": "Free, with a shown chance the natives grow angrier that rises with the escort.",
+          "outcomes": {},
+          "risk": {
+            "oddsPct": 30,
+            "securityOddsPerGuard": 2,
+            "label": "Natives angrier",
+            "outcomes": {
+              "nativeMood": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "raiders_camp",
+      "scenes": ["NativeContact"],
+      "trigger": {
+        "native": "Hostile",
+        "variant": "raiders"
+      },
+      "weight": 20,
+      "cooldownDays": 0,
+      "title": "Raiders' camp",
+      "body": "Smoke marks a raiders' camp beside the only pass. Sentries have seen the team, and a runner has gone ahead.",
+      "choices": [
+        {
+          "label": "Pay tribute",
+          "preview": "Supplies spent, natives left as they are.",
+          "outcomes": {
+            "supplies": {
+              "pct": -20
+            }
+          }
+        },
+        {
+          "label": "Fight through",
+          "preview": "Free, with a shown chance of a clash that costs explorers and falls with the escort.",
+          "outcomes": {},
+          "risk": {
+            "oddsPct": 55,
+            "securityOddsPerGuard": -4,
+            "label": "Clash",
+            "outcomes": {
+              "colonists": {
+                "pct": -10
+              }
+            }
+          }
+        },
+        {
+          "label": "Go around",
+          "preview": "Days lost, natives left as they are.",
+          "outcomes": {
+            "delayDays": 4
+          }
+        }
+      ]
+    }
+  ]
+}

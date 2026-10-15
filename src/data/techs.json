@@ -1,0 +1,106 @@
+{
+  "_note": "PLACEHOLDER numbers (see docs/BALANCE.md, M5). Ten techs in three short branches. Each tech has exactly one effect from a fixed list (see src/shared/research.ts); a prerequisite is the index of the tech that must be known first, or -1.",
+  "branches": ["Propulsion", "Life Support", "Exploration"],
+  "techs": [
+    {
+      "id": "ion_drive",
+      "name": "Ion Drive",
+      "branch": 0,
+      "cost": 600,
+      "prereq": -1,
+      "effect": "burnCutPct",
+      "value": 15,
+      "text": "Ships burn 15% less fuel in flight."
+    },
+    {
+      "id": "reinforced_hulls",
+      "name": "Reinforced Hulls",
+      "branch": 0,
+      "cost": 900,
+      "prereq": 0,
+      "effect": "hullRatingPct",
+      "value": 25,
+      "text": "Hull rating +25%: fewer event cards in flight."
+    },
+    {
+      "id": "fuel_cracking",
+      "name": "Fuel Cracking",
+      "branch": 0,
+      "cost": 1200,
+      "prereq": 1,
+      "effect": "refineryPct",
+      "value": 50,
+      "text": "Refinery districts yield 50% more fuel."
+    },
+    {
+      "id": "hydroponics",
+      "name": "Hydroponics",
+      "branch": 1,
+      "cost": 600,
+      "prereq": -1,
+      "effect": "farmPct",
+      "value": 50,
+      "text": "Farm districts yield 50% more supplies."
+    },
+    {
+      "id": "water_recycling",
+      "name": "Water Recycling",
+      "branch": 1,
+      "cost": 900,
+      "prereq": 3,
+      "effect": "eatCutPct",
+      "value": 20,
+      "text": "Colonies eat 20% fewer supplies."
+    },
+    {
+      "id": "medical_bay",
+      "name": "Medical Bay",
+      "branch": 1,
+      "cost": 1200,
+      "prereq": 4,
+      "effect": "foundingPts",
+      "value": 8,
+      "text": "Founding chance +8% (multiplier on the odds)."
+    },
+    {
+      "id": "laboratories",
+      "name": "Laboratories",
+      "branch": 2,
+      "cost": 500,
+      "prereq": -1,
+      "effect": "researchPct",
+      "value": 50,
+      "text": "Research labs yield 50% more points."
+    },
+    {
+      "id": "orbital_scanning",
+      "name": "Orbital Scanning",
+      "branch": 2,
+      "cost": 700,
+      "prereq": 6,
+      "effect": "surveyPts",
+      "value": 10,
+      "text": "Targets are scanned and surveyed 10 points of the trip earlier."
+    },
+    {
+      "id": "deep_core_drills",
+      "name": "Deep Core Drills",
+      "branch": 2,
+      "cost": 1000,
+      "prereq": 7,
+      "effect": "minePct",
+      "value": 50,
+      "text": "Mine districts yield 50% more Production."
+    },
+    {
+      "id": "native_liaison",
+      "name": "Native Liaison",
+      "branch": 2,
+      "cost": 1200,
+      "prereq": 8,
+      "effect": "raidCutPct",
+      "value": 50,
+      "text": "Native raids do 50% less harm."
+    }
+  ]
+}

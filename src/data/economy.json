@@ -1,0 +1,52 @@
+{
+  "_note": "PLACEHOLDER numbers (see docs/BALANCE.md, M5). Tune here, never in code. Percent factors: 100 is neutral. District order: farm, mine, refinery, habitat, research, spaceport. Terrain arrays follow terrain.json (plains, highlands, jungle, ice, crater, ruins). Stance arrays: Coexist, Defend, Push out. Native arrays: None, Peaceful, Wary, Hostile.",
+  "districts": [
+    { "id": "farm", "name": "Farm", "buildCost": 40, "buildDays": 10 },
+    { "id": "mine", "name": "Mine", "buildCost": 40, "buildDays": 10 },
+    { "id": "refinery", "name": "Refinery", "buildCost": 60, "buildDays": 10 },
+    { "id": "habitat", "name": "Habitat", "buildCost": 80, "buildDays": 10 },
+    { "id": "research", "name": "Research lab", "buildCost": 80, "buildDays": 10 },
+    { "id": "spaceport", "name": "Spaceport", "buildCost": 200, "buildDays": 30 }
+  ],
+  "output": {
+    "farmSupplies": 900,
+    "habitatSupplies": 40,
+    "mineProduction": 35,
+    "refineryFuel": 60,
+    "researchPoints": 8
+  },
+  "terrainPct": {
+    "farm": [150, 90, 130, 50, 30, 70],
+    "mine": [70, 150, 60, 90, 150, 100],
+    "refinery": [80, 100, 70, 150, 120, 80],
+    "habitat": [120, 90, 70, 60, 40, 80],
+    "research": [90, 100, 80, 80, 90, 160]
+  },
+  "workersFull": 150,
+  "minWorkPct": 20,
+  "settlement": { "supplies": 40, "production": 8, "suppliesPopDivisor": 5 },
+  "founding": { "starterProduction": 260, "starterFoodDays": 30, "starterFoodCap": 40000 },
+  "starvation": { "pctPerDay": 3, "graceDays": 10 },
+  "housing": { "base": 1000, "perHabitat": 600 },
+  "growth": { "permillePerDay": 10, "tierPct": [0, 100, 150] },
+  "penaltyOutputPct": 50,
+  "coexistBonusPct": 10,
+  "stockCap": 1000000000,
+  "homeworld": { "supplies": 130, "fuel": 12, "production": 25 },
+  "natives": {
+    "raidIntervalDays": 30,
+    "raidChancePct": [0, 0, 0, 50],
+    "raidHarmPct": 4,
+    "raidDistrictPct": 40,
+    "stanceChancePct": [100, 50, 150],
+    "stanceHarmPct": [100, 50, 100],
+    "defendUpkeepProduction": 3,
+    "pushIntervalDays": 20,
+    "pushCostPct": 2,
+    "pushCostMin": 5,
+    "driftIntervalDays": 60,
+    "driftChancePct": [40, 20, 60]
+  },
+  "win": { "colonies": 10, "population": 2600, "holdDays": 90 },
+  "lose": { "minLaunchPassengers": 20 }
+}

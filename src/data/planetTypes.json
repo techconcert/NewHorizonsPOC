@@ -1,0 +1,11 @@
+{
+  "_note": "PLACEHOLDER terrain mixes per planet type. weights follow terrain order: plains, highlands, jungle, ice, crater, ruins; each sums to 100.",
+  "planetTypes": [
+    { "id": "temperate", "name": "Temperate", "terrainWeights": [45, 20, 20, 5, 5, 5] },
+    { "id": "arid", "name": "Arid", "terrainWeights": [25, 40, 0, 0, 30, 5] },
+    { "id": "jungle", "name": "Jungle", "terrainWeights": [20, 10, 55, 0, 5, 10] },
+    { "id": "frozen", "name": "Frozen", "terrainWeights": [15, 25, 0, 50, 5, 5] },
+    { "id": "barren", "name": "Barren", "terrainWeights": [10, 30, 0, 10, 45, 5] },
+    { "id": "ancient", "name": "Ancient", "terrainWeights": [15, 15, 10, 5, 15, 40] }
+  ]
+}

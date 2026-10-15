@@ -1,0 +1,17 @@
+{
+  "_note": "PLACEHOLDER numbers (see docs/BALANCE.md). Tune here, never in code.",
+  "reroutePenaltyFuel": 200,
+  "starvationPctPerDay": 10,
+  "driftDaysToLost": 10,
+  "eventChancePermilleScale": 10,
+  "eventChanceMaxPermille": 25,
+  "eventSpeedFactorX100": [100, 70, 40],
+  "survey": {
+    "scannedRemainingPct": 60,
+    "surveyedRemainingPct": 25,
+    "kitBonusPctPerStep": 5,
+    "kitBonusMaxPct": 30,
+    "scannedHalfWidth": 25,
+    "surveyedHalfWidth": 8
+  }
+}

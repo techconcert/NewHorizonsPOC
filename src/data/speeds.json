@@ -1,0 +1,8 @@
+{
+  "_note": "fuelMult is from the design (1 / 1.5 / 2.5). etaMult is a PLACEHOLDER (BALANCE.md).",
+  "speeds": [
+    { "id": "economy", "name": "Economy", "fuelMult": 1, "etaMult": 1 },
+    { "id": "cruise", "name": "Cruise", "fuelMult": 1.5, "etaMult": 1.5 },
+    { "id": "hard_burn", "name": "Hard Burn", "fuelMult": 2.5, "etaMult": 2.5 }
+  ]
+}

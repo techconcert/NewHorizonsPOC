@@ -1,0 +1,60 @@
+{
+  "_note": "Hazard levels from the design; find odds are PLACEHOLDERS (M7a: each terrain has its own table, every one with a mystery share for the planetfall cards). Each finds array sums to 100 and lines up with findKinds. flavour is one short line shown on the region card.",
+  "findKinds": [
+    "farmland",
+    "water",
+    "ore",
+    "defensible",
+    "rich_food",
+    "disease",
+    "fuel_ice",
+    "rare_minerals",
+    "tech",
+    "mystery",
+    "nothing"
+  ],
+  "terrains": [
+    {
+      "id": "plains",
+      "name": "Plains",
+      "hazard": "Low",
+      "finds": [28, 22, 5, 5, 5, 3, 0, 0, 0, 10, 22],
+      "flavour": "Open grass and slow rivers. Easy marching, little cover."
+    },
+    {
+      "id": "highlands",
+      "name": "Highlands",
+      "hazard": "Medium",
+      "finds": [5, 5, 28, 22, 0, 3, 0, 5, 0, 8, 24],
+      "flavour": "Broken ridges and thin soil. Ore in the cuts, good ground for a wall."
+    },
+    {
+      "id": "jungle",
+      "name": "Jungle",
+      "hazard": "High",
+      "finds": [10, 10, 0, 0, 27, 20, 0, 0, 0, 8, 25],
+      "flavour": "Wet, dense and loud. Food everywhere, and fever with it."
+    },
+    {
+      "id": "ice",
+      "name": "Ice",
+      "hazard": "Medium",
+      "finds": [0, 28, 5, 5, 0, 0, 28, 0, 2, 8, 24],
+      "flavour": "Wind and white glare. Clean water and fuel in the ice, little else."
+    },
+    {
+      "id": "crater",
+      "name": "Crater",
+      "hazard": "High",
+      "finds": [0, 0, 18, 5, 0, 2, 0, 32, 3, 12, 28],
+      "flavour": "A scarred bowl of fused rock. Rare minerals and few safe paths."
+    },
+    {
+      "id": "ruins",
+      "name": "Ruins",
+      "hazard": "Variable",
+      "finds": [0, 0, 5, 5, 0, 0, 0, 5, 35, 32, 18],
+      "flavour": "Fallen stone older than any record. Strange machines, and traps."
+    }
+  ]
+}
