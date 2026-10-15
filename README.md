@@ -14,6 +14,19 @@ The goal is to build a self-sustaining colony network before the homeworld colla
 
 This repository contains the full source of the playable game (codebase working title "Colony Ship").
 
+## Screenshots
+
+All captured from the production build (seed 42). Planets are generated per seed; each type weights a different terrain mix, and terrain is revealed as the expedition explores.
+
+| | |
+|---|---|
+| ![Temperate planet: plains, highlands and ice regions around the landing zone](docs/screenshots/planet-temperate.png) | ![Arid planet: plains, farmland, a crater region and ruins](docs/screenshots/planet-arid.png) |
+| **Temperate** planet, first regions explored | **Arid** planet with crater and ruins |
+| ![Jungle planet: dense tree-covered hexes with a farmland find](docs/screenshots/planet-jungle.png) | ![Frozen planet: ice, highlands and crater hexes with a water find](docs/screenshots/planet-frozen.png) |
+| **Jungle** planet, dense forest hexes | **Frozen** planet with a water find on the ice |
+| ![Ancient planet: highlands and plains with ruins](docs/screenshots/planet-ancient.png) | ![A founded colony on a jungle planet with its settlement and the colony panel](docs/screenshots/colony.png) |
+| **Ancient** planet with ruins | **Colonization:** a founded colony and its status panel |
+
 ## Goals
 
 The design rests on five pillars.
